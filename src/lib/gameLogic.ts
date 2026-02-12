@@ -1,9 +1,9 @@
 import type { GameState, XPEvent, QuestInstance, QuestTemplate, Character, Skill, CampaignStep } from "@/types/game";
 
-// XP and Level calculations
-export function getSkillXP(state: GameState, skillId: string): number {
+// XP and Level calculations — now character-aware for shared skills
+export function getSkillXP(state: GameState, skillId: string, characterId?: string): number {
   return state.xpEvents
-    .filter((e) => e.skillId === skillId)
+    .filter((e) => e.skillId === skillId && (!characterId || e.characterId === characterId))
     .reduce((sum, e) => sum + e.xp, 0);
 }
 
@@ -25,7 +25,7 @@ export function getXPProgress(xp: number, xpPerLevel: number): number {
   return (xp % xpPerLevel) / xpPerLevel * 100;
 }
 
-// Quest instance generation
+// ID + date helpers
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
@@ -44,13 +44,15 @@ export function getDayOfWeek(date: Date): number {
   return date.getDay();
 }
 
+// Quest instance generation
 export function shouldGenerateForDay(
   template: QuestTemplate,
   date: Date,
   anchorDate?: string
 ): boolean {
   if (!template.active) return false;
-  
+  if (template.visibility === "suggested") return false;
+
   switch (template.recurrenceType) {
     case "none":
       return false;
@@ -72,30 +74,29 @@ export function shouldGenerateForDay(
 export function generateQuestInstances(state: GameState): QuestInstance[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const existingMap = new Map<string, QuestInstance>();
   state.questInstances.forEach((qi) => {
     const key = `${qi.templateId}-${qi.dueDate}-${qi.slot ?? 1}`;
     existingMap.set(key, qi);
   });
-  
+
   const newInstances: QuestInstance[] = [...state.questInstances];
-  
-  // Generate for today and next 7 days
+
   for (let i = 0; i <= 7; i++) {
     const date = addDays(today, i);
     const dateStr = formatDate(date);
-    
+
     for (const template of state.questTemplates) {
       if (!shouldGenerateForDay(template, date, state.customIntervalAnchor)) {
         continue;
       }
-      
+
       const timesPerDay = template.timesPerDay ?? 1;
-      
+
       for (let slot = 1; slot <= timesPerDay; slot++) {
         const key = `${template.id}-${dateStr}-${slot}`;
-        
+
         if (!existingMap.has(key)) {
           const instance: QuestInstance = {
             id: generateId(),
@@ -110,7 +111,7 @@ export function generateQuestInstances(state: GameState): QuestInstance[] {
       }
     }
   }
-  
+
   return newInstances;
 }
 
@@ -123,15 +124,14 @@ export function completeQuest(
   if (!instance || instance.status !== "available") {
     return { updatedState: state, xpEvent: null };
   }
-  
+
   const template = state.questTemplates.find((qt) => qt.id === instance.templateId);
   if (!template) {
     return { updatedState: state, xpEvent: null };
   }
-  
+
   const now = Date.now();
-  
-  // Create XP event
+
   const xpEvent: XPEvent = {
     id: generateId(),
     ts: now,
@@ -142,21 +142,19 @@ export function completeQuest(
     source: "quest",
     note: template.name,
   };
-  
-  // Update instance
+
   const updatedInstances = state.questInstances.map((qi) =>
     qi.id === instanceId
       ? { ...qi, status: "done" as const, completedTs: now }
       : qi
   );
-  
-  // Update character gold
+
   const updatedCharacters = state.characters.map((c) =>
     c.id === template.assignedToId
       ? { ...c, gold: c.gold + template.goldReward }
       : c
   );
-  
+
   return {
     updatedState: {
       ...state,
@@ -187,11 +185,11 @@ export function addManualXP(
     source: "manual",
     note,
   };
-  
+
   const updatedCharacters = state.characters.map((c) =>
     c.id === characterId ? { ...c, gold: c.gold + gold } : c
   );
-  
+
   return {
     ...state,
     xpEvents: [...state.xpEvents, xpEvent],
@@ -208,7 +206,7 @@ export function completeCampaignStep(
   if (!step || step.status !== "available") {
     return state;
   }
-  
+
   const xpEvent: XPEvent = {
     id: generateId(),
     ts: Date.now(),
@@ -219,33 +217,30 @@ export function completeCampaignStep(
     source: "campaign",
     note: step.name,
   };
-  
-  // Update the completed step and unlock next
+
   const updatedSteps = state.campaignSteps.map((s) => {
     if (s.id === stepId) {
       return { ...s, status: "done" as const };
     }
-    // Unlock next step in same campaign
     if (s.campaignId === step.campaignId && s.order === step.order + 1) {
       return { ...s, status: "available" as const };
     }
     return s;
   });
-  
-  // Check if campaign is complete
+
   const campaignSteps = updatedSteps.filter((s) => s.campaignId === step.campaignId);
   const allDone = campaignSteps.every((s) => s.status === "done");
-  
+
   const updatedCampaigns = state.campaigns.map((c) =>
     c.id === step.campaignId && allDone
       ? { ...c, status: "complete" as const }
       : c
   );
-  
+
   const updatedCharacters = state.characters.map((c) =>
     c.id === step.assignedToId ? { ...c, gold: c.gold + step.goldReward } : c
   );
-  
+
   return {
     ...state,
     campaignSteps: updatedSteps,
@@ -266,23 +261,22 @@ export function spendGold(
   if (!character || character.gold < amount) {
     return null;
   }
-  
+
   const updatedCharacters = state.characters.map((c) =>
     c.id === characterId ? { ...c, gold: c.gold - amount } : c
   );
-  
-  // Log as negative XP event (just for journal tracking)
+
   const xpEvent: XPEvent = {
     id: generateId(),
     ts: Date.now(),
     characterId,
-    skillId: "", // No skill for purchases
+    skillId: "",
     xp: 0,
     gold: -amount,
     source: "manual",
     note: `Purchased: ${note}`,
   };
-  
+
   return {
     ...state,
     characters: updatedCharacters,
@@ -290,45 +284,43 @@ export function spendGold(
   };
 }
 
-// Helper to get today's quests
+// Helpers
 export function getTodayQuests(state: GameState): QuestInstance[] {
   const today = formatDate(new Date());
   return state.questInstances.filter((qi) => qi.dueDate === today);
 }
 
-// Get recent XP events
 export function getRecentEvents(state: GameState, limit: number = 10): XPEvent[] {
   return [...state.xpEvents]
     .sort((a, b) => b.ts - a.ts)
     .slice(0, limit);
 }
 
-// Get character by ID
 export function getCharacter(state: GameState, id: string): Character | undefined {
   return state.characters.find((c) => c.id === id);
 }
 
-// Get skill by ID
 export function getSkill(state: GameState, id: string): Skill | undefined {
   return state.skills.find((s) => s.id === id);
 }
 
-// Get domain by ID
 export function getDomain(state: GameState, id: string) {
   return state.domains.find((d) => d.id === id);
 }
 
-// Get skills for a character grouped by domain
-export function getCharacterSkillsByDomain(state: GameState, characterId: string) {
-  const charSkills = state.skills.filter((s) => s.ownerId === characterId);
+// Get all skills grouped by domain (shared skills, no owner filtering)
+export function getSkillsByDomain(state: GameState) {
   const grouped: Record<string, Skill[]> = {};
-  
-  for (const skill of charSkills) {
+  for (const skill of state.skills) {
     if (!grouped[skill.domainId]) {
       grouped[skill.domainId] = [];
     }
     grouped[skill.domainId].push(skill);
   }
-  
   return grouped;
+}
+
+// Legacy compat — returns all skills grouped by domain (ignores characterId since skills are shared)
+export function getCharacterSkillsByDomain(state: GameState, _characterId: string) {
+  return getSkillsByDomain(state);
 }

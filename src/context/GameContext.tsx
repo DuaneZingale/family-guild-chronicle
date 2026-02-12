@@ -19,8 +19,11 @@ type GameAction =
   | { type: "ADD_QUEST_TEMPLATE"; template: Omit<QuestTemplate, "id"> }
   | { type: "UPDATE_QUEST_TEMPLATE"; template: QuestTemplate }
   | { type: "DELETE_QUEST_TEMPLATE"; templateId: string }
+  | { type: "ACTIVATE_SUGGESTED_QUEST"; template: Omit<QuestTemplate, "id">; assignedToId: string }
   | { type: "ADD_CAMPAIGN"; campaign: Omit<Campaign, "id">; steps: Omit<CampaignStep, "id" | "campaignId">[] }
   | { type: "ADD_REWARD"; reward: Omit<Reward, "id"> }
+  | { type: "ENTER_KID_MODE"; characterId: string }
+  | { type: "EXIT_KID_MODE" }
   | { type: "RESET_GAME" }
   | { type: "REGENERATE_INSTANCES" };
 
@@ -48,7 +51,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         questTemplates: [...state.questTemplates, newTemplate],
       };
-      // Regenerate instances with new template
       return {
         ...newState,
         questInstances: generateQuestInstances(newState),
@@ -71,6 +73,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         questTemplates: state.questTemplates.filter((t) => t.id !== action.templateId),
         questInstances: state.questInstances.filter((i) => i.templateId !== action.templateId),
+      };
+    }
+    case "ACTIVATE_SUGGESTED_QUEST": {
+      const newTemplate: QuestTemplate = {
+        ...action.template,
+        id: generateId(),
+        assignedToId: action.assignedToId,
+        visibility: "active",
+        active: true,
+      };
+      const newState = {
+        ...state,
+        questTemplates: [...state.questTemplates, newTemplate],
+      };
+      return {
+        ...newState,
+        questInstances: generateQuestInstances(newState),
       };
     }
     case "ADD_CAMPAIGN": {
@@ -101,11 +120,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         rewards: [...state.rewards, newReward],
       };
     }
+    case "ENTER_KID_MODE": {
+      return { ...state, kidModeCharacterId: action.characterId };
+    }
+    case "EXIT_KID_MODE": {
+      return { ...state, kidModeCharacterId: undefined };
+    }
     case "RESET_GAME": {
       return resetGameState();
     }
     case "REGENERATE_INSTANCES": {
-      // Set anchor date if not set
       const anchor = state.customIntervalAnchor ?? formatDate(new Date());
       const stateWithAnchor = { ...state, customIntervalAnchor: anchor };
       return {
@@ -128,7 +152,6 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, undefined, () => {
     const loaded = loadGameState();
-    // Generate instances on load
     const withAnchor = {
       ...loaded,
       customIntervalAnchor: loaded.customIntervalAnchor ?? formatDate(new Date()),
@@ -139,7 +162,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   });
 
-  // Save to localStorage on every state change
   useEffect(() => {
     saveGameState(state);
   }, [state]);
