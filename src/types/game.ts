@@ -1,6 +1,6 @@
-// Core game types - DO NOT modify field names or add new fields without TODO comment
+// Core game types — Canon v2 with shared skills, quest metadata, kid mode
 
-export type DomainName = "Health" | "Learning" | "Stewardship" | "Wealth" | "Bond" | "Craft" | "Adventure";
+export type DomainName = "Care" | "Curiosity" | "Craft" | "Contribution" | "Connection" | "Wealth" | "Adventure";
 
 export type Domain = {
   id: string;
@@ -18,12 +18,15 @@ export type Character = {
   gold: number;
 };
 
+// Skills are shared definitions — XP tracked per character via XPEvents
 export type Skill = {
   id: string;
   domainId: string;
-  ownerId: string;
   name: string;
   description: string;
+  isSuggested: boolean;
+  suggestedFor: "kid" | "parent" | "guild" | "all";
+  defaultEssential: boolean;
 };
 
 export type XPEvent = {
@@ -36,6 +39,10 @@ export type XPEvent = {
   source: "quest" | "manual" | "campaign";
   note?: string;
 };
+
+export type QuestImportance = "essential" | "growth" | "delight";
+export type QuestVisibility = "suggested" | "active";
+export type QuestAutonomy = "self_start" | "prompt_ok" | "parent_led";
 
 export type QuestTemplate = {
   id: string;
@@ -50,6 +57,12 @@ export type QuestTemplate = {
   daysOfWeek?: number[];
   intervalDays?: number;
   active: boolean;
+  // v2 fields
+  importance: QuestImportance;
+  visibility: QuestVisibility;
+  autonomyLevel: QuestAutonomy;
+  dueWindow?: { start: string; end: string };
+  notifyIfIncomplete?: boolean;
 };
 
 export type QuestInstance = {
@@ -88,7 +101,6 @@ export type Reward = {
   icon: string;
 };
 
-// Game state for context
 export type GameState = {
   domains: Domain[];
   characters: Character[];
@@ -99,5 +111,6 @@ export type GameState = {
   campaigns: Campaign[];
   campaignSteps: CampaignStep[];
   rewards: Reward[];
-  customIntervalAnchor?: string; // YYYY-MM-DD for custom interval tracking
+  customIntervalAnchor?: string;
+  kidModeCharacterId?: string; // when set, app is in kid mode for this character
 };

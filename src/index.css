@@ -50,11 +50,11 @@
     --gold-foreground: 25 30% 15%;
     --xp: 145 60% 35%;
     --xp-foreground: 145 60% 95%;
-    --health: 0 70% 50%;
-    --learning: 210 70% 50%;
-    --stewardship: 30 70% 45%;
+    --care: 0 70% 50%;
+    --curiosity: 210 70% 50%;
+    --contribution: 30 70% 45%;
     --wealth: 50 80% 50%;
-    --bond: 330 60% 55%;
+    --connection: 330 60% 55%;
     --craft: 160 50% 40%;
     --adventure: 280 50% 50%;
 

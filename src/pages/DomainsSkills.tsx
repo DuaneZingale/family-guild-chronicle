@@ -3,10 +3,9 @@ import { useGame } from "@/context/GameContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { CharacterCard } from "@/components/game/CharacterCard";
 import { SkillCard } from "@/components/game/SkillCard";
-import { DomainBadge } from "@/components/game/DomainBadge";
-import { getCharacterSkillsByDomain } from "@/lib/gameLogic";
+import { getSkillsByDomain } from "@/lib/gameLogic";
 import { cn } from "@/lib/utils";
-import type { Character, Domain } from "@/types/game";
+import type { Character } from "@/types/game";
 
 export default function DomainsSkills() {
   const { state } = useGame();
@@ -14,9 +13,7 @@ export default function DomainsSkills() {
     state.characters[0] ?? null
   );
 
-  const skillsByDomain = selectedCharacter
-    ? getCharacterSkillsByDomain(state, selectedCharacter.id)
-    : {};
+  const skillsByDomain = getSkillsByDomain(state);
 
   const domainsWithSkills = state.domains.filter(
     (d) => skillsByDomain[d.id] && skillsByDomain[d.id].length > 0
@@ -61,7 +58,7 @@ export default function DomainsSkills() {
             <div className="parchment-panel p-8 text-center">
               <span className="text-4xl block mb-2">🎯</span>
               <p className="text-lg text-muted-foreground">
-                No skills assigned to {selectedCharacter.name} yet.
+                No skills yet.
               </p>
             </div>
           ) : (

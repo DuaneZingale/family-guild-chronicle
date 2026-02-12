@@ -22,24 +22,35 @@ export function loadGameState(): GameState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as GameState;
-      // Ensure all arrays exist (for backwards compatibility)
+      // Always use latest domain + skill definitions from seed
       return {
-        domains: parsed.domains ?? DOMAINS,
+        domains: DOMAINS,
         characters: parsed.characters ?? CHARACTERS,
-        skills: parsed.skills ?? SKILLS,
+        skills: SKILLS,
         xpEvents: parsed.xpEvents ?? [],
-        questTemplates: parsed.questTemplates ?? QUEST_TEMPLATES,
+        questTemplates: migrateQuestTemplates(parsed.questTemplates ?? QUEST_TEMPLATES),
         questInstances: parsed.questInstances ?? [],
         campaigns: parsed.campaigns ?? CAMPAIGNS,
         campaignSteps: parsed.campaignSteps ?? CAMPAIGN_STEPS,
         rewards: parsed.rewards ?? REWARDS,
         customIntervalAnchor: parsed.customIntervalAnchor,
+        kidModeCharacterId: parsed.kidModeCharacterId,
       };
     }
   } catch (e) {
     console.error("Failed to load game state:", e);
   }
   return getInitialState();
+}
+
+// Migrate old quest templates to include v2 fields
+function migrateQuestTemplates(templates: any[]): GameState["questTemplates"] {
+  return templates.map((t) => ({
+    ...t,
+    importance: t.importance ?? "growth",
+    visibility: t.visibility ?? "active",
+    autonomyLevel: t.autonomyLevel ?? "prompt_ok",
+  }));
 }
 
 export function saveGameState(state: GameState): void {

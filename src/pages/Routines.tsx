@@ -21,7 +21,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
 import { Plus, Trash2, Edit } from "lucide-react";
-import type { QuestTemplate } from "@/types/game";
+import type { QuestTemplate, QuestImportance, QuestAutonomy } from "@/types/game";
 
 export default function Routines() {
   const { state, dispatch } = useGame();
@@ -37,6 +37,8 @@ export default function Routines() {
     recurrenceType: "daily" as QuestTemplate["recurrenceType"],
     timesPerDay: 1,
     daysOfWeek: [1, 2, 3, 4, 5] as number[],
+    importance: "growth" as QuestImportance,
+    autonomyLevel: "prompt_ok" as QuestAutonomy,
   });
 
   const resetForm = () => {
@@ -49,6 +51,8 @@ export default function Routines() {
       recurrenceType: "daily",
       timesPerDay: 1,
       daysOfWeek: [1, 2, 3, 4, 5],
+      importance: "growth",
+      autonomyLevel: "prompt_ok",
     });
     setEditingTemplate(null);
   };
@@ -64,6 +68,8 @@ export default function Routines() {
       recurrenceType: template.recurrenceType,
       timesPerDay: template.timesPerDay ?? 1,
       daysOfWeek: template.daysOfWeek ?? [1, 2, 3, 4, 5],
+      importance: template.importance,
+      autonomyLevel: template.autonomyLevel,
     });
     setIsDialogOpen(true);
   };
@@ -82,6 +88,9 @@ export default function Routines() {
       timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
       daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
       active: true,
+      importance: formData.importance,
+      visibility: "active",
+      autonomyLevel: formData.autonomyLevel,
     };
 
     if (editingTemplate) {
@@ -108,12 +117,19 @@ export default function Routines() {
     });
   };
 
-  // Get skills for selected character
-  const availableSkills = formData.assignedToId
-    ? state.skills.filter((s) => s.ownerId === formData.assignedToId)
-    : [];
+  // All skills available (shared definitions)
+  const allSkills = state.skills;
 
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const importanceIcon: Record<QuestImportance, string> = {
+    essential: "🔴",
+    growth: "🟡",
+    delight: "🟢",
+  };
+
+  // Only show active templates
+  const activeTemplates = state.questTemplates.filter((t) => t.visibility === "active");
 
   return (
     <PageWrapper title="Routines" subtitle="Manage recurring quests and habits">
@@ -149,7 +165,7 @@ export default function Routines() {
               <Label>Assigned To</Label>
               <Select
                 value={formData.assignedToId}
-                onValueChange={(v) => setFormData({ ...formData, assignedToId: v, skillId: "" })}
+                onValueChange={(v) => setFormData({ ...formData, assignedToId: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select character" />
@@ -169,13 +185,12 @@ export default function Routines() {
               <Select
                 value={formData.skillId}
                 onValueChange={(v) => setFormData({ ...formData, skillId: v })}
-                disabled={!formData.assignedToId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select skill" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSkills.map((skill) => {
+                  {allSkills.map((skill) => {
                     const domain = getDomain(state, skill.domainId);
                     return (
                       <SelectItem key={skill.id} value={skill.id}>
@@ -185,6 +200,41 @@ export default function Routines() {
                   })}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Importance</Label>
+                <Select
+                  value={formData.importance}
+                  onValueChange={(v) => setFormData({ ...formData, importance: v as QuestImportance })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="essential">🔴 Essential</SelectItem>
+                    <SelectItem value="growth">🟡 Growth</SelectItem>
+                    <SelectItem value="delight">🟢 Delight</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Autonomy</Label>
+                <Select
+                  value={formData.autonomyLevel}
+                  onValueChange={(v) => setFormData({ ...formData, autonomyLevel: v as QuestAutonomy })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self_start">Self Start</SelectItem>
+                    <SelectItem value="prompt_ok">Prompt OK</SelectItem>
+                    <SelectItem value="parent_led">Parent Led</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -276,16 +326,16 @@ export default function Routines() {
 
       {/* Existing routines */}
       <div className="space-y-4">
-        {state.questTemplates.length === 0 ? (
+        {activeTemplates.length === 0 ? (
           <div className="parchment-panel p-8 text-center">
             <span className="text-4xl block mb-2">📜</span>
             <p className="text-lg text-muted-foreground">No routines yet.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Create one to start generating daily quests!
+              Create one or browse the Guild Library!
             </p>
           </div>
         ) : (
-          state.questTemplates.map((template) => {
+          activeTemplates.map((template) => {
             const character = getCharacter(state, template.assignedToId);
             const skill = getSkill(state, template.skillId);
             const domain = skill ? getDomain(state, skill.domainId) : null;
@@ -298,6 +348,7 @@ export default function Routines() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm">{importanceIcon[template.importance]}</span>
                       <span className="font-fantasy text-lg">{template.name}</span>
                       <span className="text-xs px-2 py-0.5 bg-muted rounded capitalize">
                         {template.recurrenceType}

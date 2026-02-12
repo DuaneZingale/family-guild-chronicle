@@ -11,7 +11,7 @@ interface SkillCardProps {
 
 export function SkillCard({ skill, characterId, showAddButtons = true }: SkillCardProps) {
   const { state, dispatch } = useGame();
-  const xp = getSkillXP(state, skill.id);
+  const xp = getSkillXP(state, skill.id, characterId);
   const level = getSkillLevel(xp);
   const progress = getXPProgress(xp, 100);
   const domain = getDomain(state, skill.domainId);
@@ -38,7 +38,7 @@ export function SkillCard({ skill, characterId, showAddButtons = true }: SkillCa
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
-          
+
           <div className="mt-3">
             <div className="xp-bar">
               <div className="xp-bar-fill" style={{ width: `${progress}%` }} />
@@ -48,7 +48,7 @@ export function SkillCard({ skill, characterId, showAddButtons = true }: SkillCa
             </div>
           </div>
         </div>
-        
+
         {showAddButtons && (
           <div className="flex flex-col gap-1">
             <Button

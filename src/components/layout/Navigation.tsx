@@ -1,17 +1,29 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useGame } from "@/context/GameContext";
+import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { path: "/", label: "Guild Hall", icon: "🏰" },
-  { path: "/domains", label: "Domains", icon: "⚔️" },
-  { path: "/routines", label: "Routines", icon: "📜" },
-  { path: "/campaigns", label: "Campaigns", icon: "🗺️" },
-  { path: "/shop", label: "Shop", icon: "🛒" },
-  { path: "/journal", label: "Journal", icon: "📖" },
+const allNavItems = [
+  { path: "/", label: "Guild Hall", icon: "🏰", kidVisible: true },
+  { path: "/domains", label: "Domains", icon: "⚔️", kidVisible: true },
+  { path: "/library", label: "Library", icon: "📚", kidVisible: true },
+  { path: "/routines", label: "Routines", icon: "📜", kidVisible: false },
+  { path: "/campaigns", label: "Campaigns", icon: "🗺️", kidVisible: false },
+  { path: "/shop", label: "Shop", icon: "🛒", kidVisible: true },
+  { path: "/journal", label: "Journal", icon: "📖", kidVisible: false },
 ];
 
 export function Navigation() {
   const location = useLocation();
+  const { state, dispatch } = useGame();
+  const isKidMode = !!state.kidModeCharacterId;
+  const kidChar = isKidMode
+    ? state.characters.find((c) => c.id === state.kidModeCharacterId)
+    : null;
+
+  const navItems = isKidMode
+    ? allNavItems.filter((item) => item.kidVisible)
+    : allNavItems;
 
   return (
     <nav className="wood-panel sticky top-0 z-50 border-b-4 border-amber-900/50">
@@ -23,7 +35,7 @@ export function Navigation() {
               Family Guild
             </h1>
           </Link>
-          
+
           <div className="flex items-center gap-1 sm:gap-2">
             {navItems.map((item) => (
               <Link
@@ -40,6 +52,33 @@ export function Navigation() {
                 <span className="hidden md:inline">{item.label}</span>
               </Link>
             ))}
+
+            {/* Kid Mode toggle */}
+            {isKidMode ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2 text-xs bg-sidebar-accent/30 text-sidebar-foreground border-sidebar-border"
+                onClick={() => dispatch({ type: "EXIT_KID_MODE" })}
+              >
+                {kidChar?.avatarEmoji} Exit Kid Mode
+              </Button>
+            ) : (
+              <div className="ml-2 flex gap-1">
+                {state.characters
+                  .filter((c) => c.isKid)
+                  .map((kid) => (
+                    <button
+                      key={kid.id}
+                      onClick={() => dispatch({ type: "ENTER_KID_MODE", characterId: kid.id })}
+                      className="text-xl hover:scale-110 transition-transform"
+                      title={`${kid.name}'s Mode`}
+                    >
+                      {kid.avatarEmoji}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

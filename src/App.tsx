@@ -10,6 +10,7 @@ import Routines from "./pages/Routines";
 import Campaigns from "./pages/Campaigns";
 import RewardsShop from "./pages/RewardsShop";
 import Journal from "./pages/Journal";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,11 +25,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<GuildHall />} />
             <Route path="/domains" element={<DomainsSkills />} />
+            <Route path="/library" element={<Library />} />
             <Route path="/routines" element={<Routines />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/shop" element={<RewardsShop />} />
             <Route path="/journal" element={<Journal />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
