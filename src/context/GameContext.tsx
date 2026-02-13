@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
-import type { GameState, QuestTemplate, Campaign, CampaignStep, Reward } from "@/types/game";
+import type { GameState, QuestTemplate, Campaign, CampaignStep, Reward, Character } from "@/types/game";
 import { loadGameState, saveGameState, resetGameState } from "@/lib/storage";
 import {
   generateQuestInstances,
@@ -22,6 +22,9 @@ type GameAction =
   | { type: "ACTIVATE_SUGGESTED_QUEST"; template: Omit<QuestTemplate, "id">; assignedToId: string }
   | { type: "ADD_CAMPAIGN"; campaign: Omit<Campaign, "id">; steps: Omit<CampaignStep, "id" | "campaignId">[] }
   | { type: "ADD_REWARD"; reward: Omit<Reward, "id"> }
+  | { type: "ADD_CHARACTER"; character: Omit<Character, "id"> }
+  | { type: "UPDATE_CHARACTER"; character: Character }
+  | { type: "DELETE_CHARACTER"; characterId: string }
   | { type: "ENTER_KID_MODE"; characterId: string }
   | { type: "EXIT_KID_MODE" }
   | { type: "RESET_GAME" }
@@ -118,6 +121,32 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         rewards: [...state.rewards, newReward],
+      };
+    }
+    case "ADD_CHARACTER": {
+      const newChar: Character = {
+        ...action.character,
+        id: generateId(),
+      };
+      return { ...state, characters: [...state.characters, newChar] };
+    }
+    case "UPDATE_CHARACTER": {
+      return {
+        ...state,
+        characters: state.characters.map((c) =>
+          c.id === action.character.id ? action.character : c
+        ),
+      };
+    }
+    case "DELETE_CHARACTER": {
+      return {
+        ...state,
+        characters: state.characters.filter((c) => c.id !== action.characterId),
+        questTemplates: state.questTemplates.filter((t) => t.assignedToId !== action.characterId),
+        questInstances: state.questInstances.filter((qi) => {
+          const tpl = state.questTemplates.find((t) => t.id === qi.templateId);
+          return tpl?.assignedToId !== action.characterId;
+        }),
       };
     }
     case "ENTER_KID_MODE": {
