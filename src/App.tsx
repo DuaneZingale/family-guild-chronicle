@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GameProvider } from "@/context/GameContext";
 import GuildHall from "./pages/GuildHall";
+import CharacterProfile from "./pages/CharacterProfile";
 import DomainsSkills from "./pages/DomainsSkills";
 import Routines from "./pages/Routines";
 import Campaigns from "./pages/Campaigns";
@@ -24,6 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<GuildHall />} />
+            <Route path="/character/:id" element={<CharacterProfile />} />
             <Route path="/domains" element={<DomainsSkills />} />
             <Route path="/library" element={<Library />} />
             <Route path="/routines" element={<Routines />} />

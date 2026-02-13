@@ -5,7 +5,7 @@ import type { Character } from "@/types/game";
 
 interface CharacterCardProps {
   character: Character;
-  variant?: "compact" | "full";
+  variant?: "compact" | "full" | "tile";
   onClick?: () => void;
 }
 
@@ -14,6 +14,31 @@ export function CharacterCard({ character, variant = "compact", onClick }: Chara
   const xp = getCharacterXP(state, character.id);
   const level = getCharacterLevel(xp);
   const progress = getXPProgress(xp, 200);
+
+  if (variant === "tile") {
+    return (
+      <div
+        className={cn(
+          "parchment-panel p-4 flex flex-col items-center gap-2 text-center",
+          onClick && "cursor-pointer hover:scale-[1.03] transition-transform"
+        )}
+        onClick={onClick}
+      >
+        <span className="text-4xl">{character.avatarEmoji}</span>
+        <div className="font-fantasy text-base truncate w-full">{character.name}</div>
+        <span className="text-xs px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full">
+          Lvl {level}
+        </span>
+        <div className="xp-bar w-full mt-1">
+          <div className="xp-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="flex items-center gap-1 text-sm">
+          <span>💰</span>
+          <span className="gold-text font-semibold">{character.gold}</span>
+        </div>
+      </div>
+    );
+  }
 
   if (variant === "compact") {
     return (
