@@ -263,7 +263,7 @@ export default function GuildSettings() {
                       <Label className="text-xs">Email address</Label>
                       <Input
                         type="email"
-                        placeholder="becky@example.com"
+                        placeholder="email@gmail.com"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         required
