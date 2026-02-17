@@ -4,28 +4,28 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { CharacterCard } from "@/components/game/CharacterCard";
 import { SkillCard } from "@/components/game/SkillCard";
 import { QuickAddQuest } from "@/components/game/QuickAddQuest";
-import { getSkillsByDomain } from "@/lib/gameLogic";
+import { getSkillsByPath } from "@/lib/gameLogic";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type { Character } from "@/types/game";
 
-export default function DomainsSkills() {
+export default function PathsSkills() {
   const { state } = useGame();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
     state.characters[0] ?? null
   );
 
-  const skillsByDomain = getSkillsByDomain(state);
+  const skillsByPath = getSkillsByPath(state);
 
-  const domainsWithSkills = state.domains.filter(
-    (d) => skillsByDomain[d.id] && skillsByDomain[d.id].length > 0
+  const pathsWithSkills = state.domains.filter(
+    (d) => skillsByPath[d.id] && skillsByPath[d.id].length > 0
   );
 
   return (
     <PageWrapper
-      title="Domains & Skills"
-      subtitle="Track your progress across all areas of mastery"
+      title="The Seven Paths"
+      subtitle="Track your progress across all paths of growth"
     >
       {/* Character selector */}
       <div className="mb-6">
@@ -68,8 +68,8 @@ export default function DomainsSkills() {
             />
           </div>
 
-          {/* Skills by domain */}
-          {domainsWithSkills.length === 0 ? (
+          {/* Skills by path */}
+          {pathsWithSkills.length === 0 ? (
             <div className="parchment-panel p-8 text-center">
               <span className="text-4xl block mb-2">🎯</span>
               <p className="text-lg text-muted-foreground">
@@ -78,20 +78,20 @@ export default function DomainsSkills() {
             </div>
           ) : (
             <div className="space-y-8">
-              {domainsWithSkills.map((domain) => (
-                <div key={domain.id}>
+              {pathsWithSkills.map((path) => (
+                <div key={path.id}>
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl">{domain.icon}</span>
+                    <span className="text-3xl">{path.icon}</span>
                     <div>
-                      <h2 className="font-fantasy text-2xl">{domain.name}</h2>
+                      <h2 className="font-fantasy text-2xl">{path.name}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {domain.description}
+                        {path.description}
                       </p>
                     </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {skillsByDomain[domain.id].map((skill) => (
+                    {skillsByPath[path.id].map((skill) => (
                       <SkillCard
                         key={skill.id}
                         skill={skill}

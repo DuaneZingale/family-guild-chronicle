@@ -1,4 +1,4 @@
-import type { GameState, XPEvent, QuestInstance, QuestTemplate, Character, Skill, CampaignStep } from "@/types/game";
+import type { GameState, XPEvent, QuestInstance, QuestTemplate, Character, Skill, CampaignStep, Path } from "@/types/game";
 
 // XP and Level calculations — now character-aware for shared skills
 export function getSkillXP(state: GameState, skillId: string, characterId?: string): number {
@@ -7,6 +7,7 @@ export function getSkillXP(state: GameState, skillId: string, characterId?: stri
     .reduce((sum, e) => sum + e.xp, 0);
 }
 
+// Level calculations
 export function getSkillLevel(xp: number): number {
   return Math.floor(xp / 100) + 1;
 }
@@ -258,17 +259,14 @@ export function uncompleteCampaignStep(
   const step = state.campaignSteps.find((s) => s.id === stepId);
   if (!step || step.status !== "done") return state;
 
-  // Remove the XP event that was created for this step
   const xpEvents = state.xpEvents.filter(
     (e) => !(e.source === "campaign" && e.note === step.name && e.characterId === step.assignedToId && e.skillId === step.skillId)
   );
 
-  // Revert gold
   const updatedCharacters = state.characters.map((c) =>
     c.id === step.assignedToId ? { ...c, gold: Math.max(0, c.gold - step.goldReward) } : c
   );
 
-  // Set this step back to available, and any step after it back to locked
   const updatedSteps = state.campaignSteps.map((s) => {
     if (s.campaignId !== step.campaignId) return s;
     if (s.id === stepId) return { ...s, status: "available" as const };
@@ -276,7 +274,6 @@ export function uncompleteCampaignStep(
     return s;
   });
 
-  // Campaign can't be complete if we uncompleted a step
   const updatedCampaigns = state.campaigns.map((c) =>
     c.id === step.campaignId ? { ...c, status: "active" as const } : c
   );
@@ -344,12 +341,18 @@ export function getSkill(state: GameState, id: string): Skill | undefined {
   return state.skills.find((s) => s.id === id);
 }
 
-export function getDomain(state: GameState, id: string) {
+/** Get a path (formerly domain) by ID */
+export function getPath(state: GameState, id: string): Path | undefined {
   return state.domains.find((d) => d.id === id);
 }
 
-// Get all skills grouped by domain (shared skills, no owner filtering)
-export function getSkillsByDomain(state: GameState) {
+/** @deprecated Use getPath instead */
+export function getDomain(state: GameState, id: string) {
+  return getPath(state, id);
+}
+
+// Get all skills grouped by path (shared skills, no owner filtering)
+export function getSkillsByPath(state: GameState) {
   const grouped: Record<string, Skill[]> = {};
   for (const skill of state.skills) {
     if (!grouped[skill.domainId]) {
@@ -360,7 +363,12 @@ export function getSkillsByDomain(state: GameState) {
   return grouped;
 }
 
-// Legacy compat — returns all skills grouped by domain (ignores characterId since skills are shared)
+/** @deprecated Use getSkillsByPath */
+export function getSkillsByDomain(state: GameState) {
+  return getSkillsByPath(state);
+}
+
+// Legacy compat
 export function getCharacterSkillsByDomain(state: GameState, _characterId: string) {
-  return getSkillsByDomain(state);
+  return getSkillsByPath(state);
 }

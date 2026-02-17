@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, Mail, Plus, RefreshCw, KeyRound } from "lucide-react";
 
 interface MemberRow {
   id: string;
@@ -38,6 +38,7 @@ interface InviteRow {
   id: string;
   invite_code: string;
   role: string;
+  email: string | null;
   expires_at: string;
 }
 
@@ -64,8 +65,10 @@ export default function GuildSettings() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [invites, setInvites] = useState<InviteRow[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
-  const [newInviteRole, setNewInviteRole] = useState("kid");
-  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [newInviteRole, setNewInviteRole] = useState("co-parent");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [creatingCode, setCreatingCode] = useState(false);
   const [guildName, setGuildName] = useState(membership?.familyName ?? "");
   const [savingName, setSavingName] = useState(false);
 
@@ -80,7 +83,6 @@ export default function GuildSettings() {
     if (!familyId) return;
     setLoadingMembers(true);
 
-    // Get memberships
     const { data: memberships } = await supabase
       .from("memberships")
       .select("id, user_id, role")
@@ -91,13 +93,11 @@ export default function GuildSettings() {
       return;
     }
 
-    // Get character links for these users
     const { data: links } = await supabase
       .from("user_character_links")
       .select("user_id, character_id")
       .eq("family_id", familyId);
 
-    // Get characters
     const { data: characters } = await supabase
       .from("characters")
       .select("id, name, avatar_emoji")
@@ -113,7 +113,7 @@ export default function GuildSettings() {
         id: m.id,
         user_id: m.user_id,
         role: m.role,
-        email: null, // We can't read auth.users, will show user_id
+        email: null,
         characterName: char?.name ?? null,
         avatarEmoji: char?.avatar_emoji ?? "🧙",
       };
@@ -127,7 +127,7 @@ export default function GuildSettings() {
     if (!familyId) return;
     const { data } = await supabase
       .from("family_invites")
-      .select("id, invite_code, role, expires_at")
+      .select("id, invite_code, role, expires_at, email")
       .eq("family_id", familyId)
       .gte("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
@@ -135,9 +135,44 @@ export default function GuildSettings() {
     setInvites(data ?? []);
   }
 
-  async function handleCreateInvite() {
+  async function handleSendEmailInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!familyId || !inviteEmail.trim()) return;
+    setSendingInvite(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invite-email", {
+        body: {
+          email: inviteEmail.trim(),
+          familyId,
+          role: newInviteRole,
+          familyName: membership?.familyName,
+          inviterName: user?.email,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Invite sent! 📧",
+        description: `Sent to ${inviteEmail}. Code: ${data?.inviteCode}`,
+      });
+      setInviteEmail("");
+      loadInvites();
+    } catch (err: any) {
+      toast({
+        title: "Failed to send invite",
+        description: err.message || "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingInvite(false);
+    }
+  }
+
+  async function handleCreateCodeOnly() {
     if (!familyId) return;
-    setCreatingInvite(true);
+    setCreatingCode(true);
 
     const code = generateInviteCode();
     const { error } = await supabase.from("family_invites").insert({
@@ -146,11 +181,11 @@ export default function GuildSettings() {
       role: newInviteRole,
     });
 
-    setCreatingInvite(false);
+    setCreatingCode(false);
     if (error) {
       toast({ title: "Failed to create invite", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Invite created! 📜", description: `Code: ${code}` });
+      toast({ title: "Code created! 📜", description: `Code: ${code}` });
       loadInvites();
     }
   }
@@ -202,12 +237,132 @@ export default function GuildSettings() {
 
   return (
     <PageWrapper title="Guild Settings" subtitle="Manage your guild members and invites">
-      <Tabs defaultValue="members" className="space-y-4">
+      <Tabs defaultValue="invites" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="invites">📧 Invite</TabsTrigger>
           <TabsTrigger value="members">👥 Members</TabsTrigger>
-          <TabsTrigger value="invites">📜 Invites</TabsTrigger>
           <TabsTrigger value="guild">🏰 Guild Info</TabsTrigger>
         </TabsList>
+
+        {/* INVITES TAB (now primary) */}
+        <TabsContent value="invites" className="space-y-4">
+          {isParent && (
+            <>
+              {/* Email invite - primary */}
+              <div className="parchment-panel p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <h3 className="font-fantasy text-lg text-foreground">Invite by Email</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Send an invite link directly to someone's email. They'll get a code to join your guild.
+                </p>
+                <form onSubmit={handleSendEmailInvite} className="space-y-3">
+                  <div className="flex gap-3 items-end flex-wrap">
+                    <div className="flex-1 min-w-[200px]">
+                      <Label className="text-xs">Email address</Label>
+                      <Input
+                        type="email"
+                        placeholder="becky@example.com"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="min-w-[160px]">
+                      <Label className="text-xs">Role</Label>
+                      <Select value={newInviteRole} onValueChange={setNewInviteRole}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROLE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button type="submit" disabled={sendingInvite || !inviteEmail.trim()}>
+                      <Mail className="h-4 w-4 mr-1" />
+                      {sendingInvite ? "Sending…" : "Send Invite"}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Code-only option - secondary */}
+              <div className="parchment-panel p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="font-fantasy text-sm text-muted-foreground">Or generate a code only</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  For kids on a shared device, or if you want to share a code manually.
+                </p>
+                <Button variant="outline" size="sm" onClick={handleCreateCodeOnly} disabled={creatingCode}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  {creatingCode ? "Creating…" : "Generate Code"}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* Active invites list */}
+          <div className="parchment-panel overflow-hidden">
+            <div className="p-3 border-b border-border">
+              <h3 className="font-fantasy text-sm text-foreground">Active Invites</h3>
+            </div>
+            {invites.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                No active invites.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Copy</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invites.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-mono text-sm tracking-wider font-bold">
+                        {inv.invite_code}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {inv.email || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={ROLE_COLORS[inv.role] ?? ""}>
+                          {ROLE_OPTIONS.find((r) => r.value === inv.role)?.label ?? inv.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(inv.expires_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(inv.invite_code)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
 
         {/* MEMBERS TAB */}
         <TabsContent value="members" className="space-y-4">
@@ -277,81 +432,6 @@ export default function GuildSettings() {
                           )}
                         </TableCell>
                       )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* INVITES TAB */}
-        <TabsContent value="invites" className="space-y-4">
-          {isParent && (
-            <div className="parchment-panel p-4 space-y-3">
-              <h3 className="font-fantasy text-foreground">Create New Invite</h3>
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs">Role for invitee</Label>
-                  <Select value={newInviteRole} onValueChange={setNewInviteRole}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROLE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleCreateInvite} disabled={creatingInvite}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {creatingInvite ? "Creating…" : "Generate Code"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className="parchment-panel overflow-hidden">
-            {invites.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                No active invites. Create one above!
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Copy</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invites.map((inv) => (
-                    <TableRow key={inv.id}>
-                      <TableCell className="font-mono text-lg tracking-wider font-bold">
-                        {inv.invite_code}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={ROLE_COLORS[inv.role] ?? ""}>
-                          {ROLE_OPTIONS.find((r) => r.value === inv.role)?.label ?? inv.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(inv.expires_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(inv.invite_code)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -7,7 +7,7 @@ import { SkillCard } from "@/components/game/SkillCard";
 import { CharacterEditDialog } from "@/components/game/CharacterEditDialog";
 import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { GuildBanner } from "@/components/game/GuildBanner";
-import { getTodayQuests, getSkillsByDomain, getDomain } from "@/lib/gameLogic";
+import { getTodayQuests, getSkillsByPath, getPath } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 
@@ -47,8 +47,8 @@ export default function CharacterProfile() {
     campaignSteps.some((s) => s.campaignId === c.id)
   );
 
-  // Skills by domain
-  const skillsByDomain = getSkillsByDomain(state);
+  // Skills by path
+  const skillsByPath = getSkillsByPath(state);
 
   return (
     <PageWrapper title={character.name} subtitle={character.roleClass}>
@@ -181,16 +181,16 @@ export default function CharacterProfile() {
         {/* Skills */}
         <section>
           <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-            <span>🌟</span> Skills
+            <span>🌟</span> Paths & Skills
           </h2>
           <div className="space-y-4">
-            {Object.entries(skillsByDomain).map(([domainId, skills]) => {
-              const domain = getDomain(state, domainId);
-              if (!domain) return null;
+            {Object.entries(skillsByPath).map(([pathId, skills]) => {
+              const path = getPath(state, pathId);
+              if (!path) return null;
               return (
-                <div key={domainId}>
+                <div key={pathId}>
                   <h3 className="font-fantasy text-base text-muted-foreground mb-2">
-                    {domain.icon} {domain.name}
+                    {path.icon} {path.name}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {skills.map((skill) => (

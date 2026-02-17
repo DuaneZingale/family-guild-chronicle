@@ -261,6 +261,7 @@ export type Database = {
       family_invites: {
         Row: {
           created_at: string
+          email: string | null
           expires_at: string
           family_id: string
           id: string
@@ -269,6 +270,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           expires_at?: string
           family_id: string
           id?: string
@@ -277,6 +279,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           expires_at?: string
           family_id?: string
           id?: string
@@ -399,6 +402,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      path_definitions: {
+        Row: {
+          description: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          description?: string
+          icon?: string
+          id: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       quest_instances: {
         Row: {
@@ -540,6 +567,7 @@ export type Database = {
           id: string
           is_default: boolean
           name: string
+          path_id: string | null
           tags: string[]
         }
         Insert: {
@@ -548,6 +576,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           name: string
+          path_id?: string | null
           tags?: string[]
         }
         Update: {
@@ -556,6 +585,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           name?: string
+          path_id?: string | null
           tags?: string[]
         }
         Relationships: [
@@ -564,6 +594,13 @@ export type Database = {
             columns: ["domain_id"]
             isOneToOne: false
             referencedRelation: "domain_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_definitions_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "path_definitions"
             referencedColumns: ["id"]
           },
         ]
