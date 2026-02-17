@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { useGame } from "@/context/GameContext";
 import { getCharacterXP } from "@/lib/gameLogic";
 
 export function GuildBanner() {
   const { state } = useGame();
+  const navigate = useNavigate();
 
   const guild = state.characters.find((c) => c.id === "guild");
   const members = state.characters.filter((c) => c.id !== "guild");
@@ -12,7 +14,7 @@ export function GuildBanner() {
   const activeCampaigns = state.campaigns.filter((c) => c.status === "active").length;
 
   return (
-    <div className="parchment-panel p-6 sm:p-8">
+    <div className="parchment-panel p-6 sm:p-8 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/guild")}>
       <div className="flex items-center gap-4 sm:gap-6">
         <span className="text-6xl sm:text-7xl">{guild?.avatarEmoji ?? "🏰"}</span>
         <div className="flex-1">
