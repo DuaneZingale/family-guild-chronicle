@@ -12,13 +12,12 @@ import {
 import { LogOut, Settings, User } from "lucide-react";
 
 const allNavItems = [
-  { path: "/", label: "Guild Hall", icon: "🏰", kidVisible: true },
+  { path: "/", label: "My Character", icon: "🧙", kidVisible: true },
+  { path: "/quest-log", label: "Quest Log", icon: "📜", kidVisible: true },
   { path: "/paths", label: "Paths", icon: "⚔️", kidVisible: true },
-  { path: "/library", label: "Library", icon: "📚", kidVisible: true },
-  { path: "/quest-log", label: "Quest Log", icon: "📜", kidVisible: false },
-  { path: "/journeys", label: "Journeys", icon: "🧭", kidVisible: false },
+  { path: "/guild", label: "Guild Hall", icon: "🏰", kidVisible: true },
+  { path: "/journal", label: "Chronicle", icon: "📖", kidVisible: false },
   { path: "/shop", label: "Shop", icon: "🛒", kidVisible: true },
-  { path: "/journal", label: "Journal", icon: "📖", kidVisible: false },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

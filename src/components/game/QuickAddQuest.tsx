@@ -84,6 +84,7 @@ export function QuickAddQuest({
   const [notifyIfIncomplete, setNotifyIfIncomplete] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  const assignableCharacters = state.characters.filter((c) => c.id !== "guild");
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // Populate form when editing
@@ -152,53 +153,58 @@ export function QuickAddQuest({
     const hasDueWindow = dueWindowStart || dueWindowEnd;
     const instanceDueDate = dueDate ? formatDate(dueDate) : formatDate(new Date());
 
+    const buildTemplateData = (charId: string): Omit<QuestTemplate, "id"> => ({
+      name: name.trim(),
+      type: isOneoff ? "oneoff" : "recurring",
+      assignedToId: charId,
+      skillId,
+      xpReward,
+      goldReward,
+      recurrenceType: isOneoff ? "none" : recurrenceType,
+      timesPerDay: !isOneoff && timesPerDay > 1 ? timesPerDay : undefined,
+      daysOfWeek: !isOneoff && recurrenceType === "weekly" ? daysOfWeek : undefined,
+      active: true,
+      importance,
+      visibility: "active",
+      autonomyLevel,
+      ...(hasDueWindow ? { dueWindow: { start: dueWindowStart, end: dueWindowEnd } } : {}),
+      notifyIfIncomplete: notifyIfIncomplete || undefined,
+    });
+
     if (isEditing && editTemplate) {
-      // Update existing template
+      // Update the original template with the first selected character
       const templateData: QuestTemplate = {
         ...editTemplate,
-        name: name.trim(),
-        assignedToId: selectedCharacterIds[0],
-        skillId,
-        xpReward,
-        goldReward,
-        recurrenceType: editTemplate.type === "oneoff" ? "none" : recurrenceType,
-        timesPerDay: editTemplate.type !== "oneoff" && timesPerDay > 1 ? timesPerDay : undefined,
-        daysOfWeek: editTemplate.type !== "oneoff" && recurrenceType === "weekly" ? daysOfWeek : undefined,
-        importance,
-        autonomyLevel,
-        dueWindow: hasDueWindow ? { start: dueWindowStart, end: dueWindowEnd } : undefined,
-        notifyIfIncomplete: notifyIfIncomplete || undefined,
+        ...buildTemplateData(selectedCharacterIds[0]),
+        id: editTemplate.id,
       };
       dispatch({ type: "UPDATE_QUEST_TEMPLATE", template: templateData });
-    } else {
-      // Create new templates
-      for (const charId of selectedCharacterIds) {
-        const baseTemplate: Omit<QuestTemplate, "id"> = {
-          name: name.trim(),
-          type: questType === "task" ? "oneoff" : "recurring",
-          assignedToId: charId,
-          skillId,
-          xpReward,
-          goldReward,
-          recurrenceType: questType === "task" ? "none" : recurrenceType,
-          timesPerDay: questType === "routine" && timesPerDay > 1 ? timesPerDay : undefined,
-          daysOfWeek: questType === "routine" && recurrenceType === "weekly" ? daysOfWeek : undefined,
-          active: true,
-          importance,
-          visibility: "active",
-          autonomyLevel,
-          ...(hasDueWindow ? { dueWindow: { start: dueWindowStart, end: dueWindowEnd } } : {}),
-          notifyIfIncomplete: notifyIfIncomplete || undefined,
-        };
 
-        if (questType === "task") {
+      // Create new templates for any additionally selected characters
+      for (let i = 1; i < selectedCharacterIds.length; i++) {
+        const newTemplate = buildTemplateData(selectedCharacterIds[i]);
+        if (isOneoff) {
           dispatch({
             type: "ADD_ONEOFF_TASK",
-            template: baseTemplate,
+            template: newTemplate,
             dueDate: instanceDueDate,
           } as any);
         } else {
-          dispatch({ type: "ADD_QUEST_TEMPLATE", template: baseTemplate });
+          dispatch({ type: "ADD_QUEST_TEMPLATE", template: newTemplate });
+        }
+      }
+    } else {
+      // Create new templates for all selected characters
+      for (const charId of selectedCharacterIds) {
+        const newTemplate = buildTemplateData(charId);
+        if (isOneoff) {
+          dispatch({
+            type: "ADD_ONEOFF_TASK",
+            template: newTemplate,
+            dueDate: instanceDueDate,
+          } as any);
+        } else {
+          dispatch({ type: "ADD_QUEST_TEMPLATE", template: newTemplate });
         }
       }
     }
@@ -268,18 +274,18 @@ export function QuickAddQuest({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedCharacterIds(state.characters.map((c) => c.id))}
+                onClick={() => setSelectedCharacterIds(assignableCharacters.map((c) => c.id))}
                 className="text-xs h-7 px-2"
               >
                 All
               </Button>
-              {state.characters.some((c) => c.isKid) && (
+              {assignableCharacters.some((c) => c.isKid) && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    setSelectedCharacterIds(state.characters.filter((c) => c.isKid).map((c) => c.id))
+                    setSelectedCharacterIds(assignableCharacters.filter((c) => c.isKid).map((c) => c.id))
                   }
                   className="text-xs h-7 px-2"
                 >
@@ -289,7 +295,7 @@ export function QuickAddQuest({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {state.characters.map((char) => (
+            {assignableCharacters.map((char) => (
               <label
                 key={char.id}
                 className={`flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-colors ${
