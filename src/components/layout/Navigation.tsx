@@ -1,7 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, Settings, User } from "lucide-react";
 
 const allNavItems = [
   { path: "/", label: "Guild Hall", icon: "🏰", kidVisible: true },
@@ -13,17 +21,30 @@ const allNavItems = [
   { path: "/journal", label: "Journal", icon: "📖", kidVisible: false },
 ];
 
+const ROLE_LABELS: Record<string, string> = {
+  parent: "Guild Master",
+  owner: "Guild Master",
+  "co-parent": "Co-Leader",
+  kid: "Adventurer",
+  guest: "Guest",
+};
+
 export function Navigation() {
   const location = useLocation();
-  const { state, dispatch } = useGame();
-  const isKidMode = !!state.kidModeCharacterId;
-  const kidChar = isKidMode
-    ? state.characters.find((c) => c.id === state.kidModeCharacterId)
-    : null;
+  const navigate = useNavigate();
+  const { membership, user, signOut, kidPinCharacterId, exitKidPinMode } = useAuth();
 
-  const navItems = isKidMode
+  const isKidMode = !!kidPinCharacterId;
+  const isKidRole = membership?.role === "kid";
+  const isRestricted = isKidMode || isKidRole;
+
+  const navItems = isRestricted
     ? allNavItems.filter((item) => item.kidVisible)
     : allNavItems;
+
+  const roleLabel = isKidMode
+    ? "Kid Mode"
+    : ROLE_LABELS[membership?.role ?? ""] ?? membership?.role ?? "";
 
   return (
     <nav className="wood-panel sticky top-0 z-50 border-b-4 border-amber-900/50">
@@ -32,7 +53,7 @@ export function Navigation() {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🏰</span>
             <h1 className="text-xl font-fantasy text-sidebar-primary tracking-wider hidden sm:block">
-              Family Guild
+              {membership?.familyName || "Family Guild"}
             </h1>
           </Link>
 
@@ -53,32 +74,54 @@ export function Navigation() {
               </Link>
             ))}
 
-            {/* Kid Mode toggle */}
+            {/* User menu */}
             {isKidMode ? (
               <Button
                 size="sm"
                 variant="outline"
                 className="ml-2 text-xs bg-sidebar-accent/30 text-sidebar-foreground border-sidebar-border"
-                onClick={() => dispatch({ type: "EXIT_KID_MODE" })}
+                onClick={() => {
+                  exitKidPinMode();
+                  navigate("/login");
+                }}
               >
-                {kidChar?.avatarEmoji} Exit Kid Mode
+                🧒 Exit Kid Mode
               </Button>
-            ) : (
-              <div className="ml-2 flex gap-1">
-                {state.characters
-                  .filter((c) => c.isKid)
-                  .map((kid) => (
-                    <button
-                      key={kid.id}
-                      onClick={() => dispatch({ type: "ENTER_KID_MODE", characterId: kid.id })}
-                      className="text-xl hover:scale-110 transition-transform"
-                      title={`${kid.name}'s Mode`}
-                    >
-                      {kid.avatarEmoji}
-                    </button>
-                  ))}
-              </div>
-            )}
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2 text-sidebar-foreground hover:bg-sidebar-accent/50 gap-1.5"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">{roleLabel}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    {user.email}
+                  </div>
+                  <DropdownMenuSeparator />
+                  {!isKidRole && (
+                    <DropdownMenuItem onClick={() => navigate("/guild-settings")}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Guild Settings
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await signOut();
+                      navigate("/login");
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         </div>
       </div>
