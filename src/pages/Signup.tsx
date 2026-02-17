@@ -34,7 +34,11 @@ export default function Signup() {
     setLoading(false);
 
     if (error) {
-      toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+      if (error.message.includes("rate limit") || error.status === 429) {
+        toast({ title: "Too many attempts", description: "Please wait a few minutes before trying again.", variant: "destructive" });
+      } else {
+        toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+      }
     } else if (data.user && data.user.identities && data.user.identities.length === 0) {
       // Supabase returns an empty identities array when the user already exists
       toast({
