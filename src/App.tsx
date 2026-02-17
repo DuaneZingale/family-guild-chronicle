@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
+import MyCharacter from "./pages/MyCharacter";
 import GuildHall from "./pages/GuildHall";
 import CharacterProfile from "./pages/CharacterProfile";
 import PathsSkills from "./pages/DomainsSkills";
@@ -77,6 +78,16 @@ const App = () => (
             />
             <Route
               path="/"
+              element={
+                <AuthGate>
+                  <GameProvider>
+                    <MyCharacter />
+                  </GameProvider>
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/guild"
               element={
                 <AuthGate>
                   <GameProvider>
