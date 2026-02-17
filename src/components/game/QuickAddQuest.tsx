@@ -214,7 +214,7 @@ export function QuickAddQuest({
     <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="font-fantasy text-xl">
-          {isEditing ? "Edit Quest" : `New ${questType === "task" ? "Task" : "Routine"}`}
+          {isEditing ? "Edit Quest" : `New ${questType === "task" ? "Guild Task" : "Daily Quest"}`}
         </DialogTitle>
       </DialogHeader>
 
@@ -230,7 +230,7 @@ export function QuickAddQuest({
                 size="sm"
                 onClick={() => setQuestType("routine")}
               >
-                🔄 Routine
+                🔄 Daily Quest
               </Button>
               <Button
                 type="button"
@@ -238,7 +238,7 @@ export function QuickAddQuest({
                 size="sm"
                 onClick={() => setQuestType("task")}
               >
-                ✅ Task
+                ⚔️ Guild Task
               </Button>
             </div>
           </div>
@@ -507,8 +507,8 @@ export function QuickAddQuest({
             : selectedCharacterIds.length > 1
             ? `Create for ${selectedCharacterIds.length} members`
             : isOneoff
-            ? "Create Task"
-            : "Create Routine"}
+            ? "Create Guild Task"
+            : "Create Daily Quest"}
         </Button>
       </div>
     </DialogContent>

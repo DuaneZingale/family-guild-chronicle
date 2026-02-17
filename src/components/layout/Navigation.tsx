@@ -15,8 +15,8 @@ const allNavItems = [
   { path: "/", label: "Guild Hall", icon: "🏰", kidVisible: true },
   { path: "/paths", label: "Paths", icon: "⚔️", kidVisible: true },
   { path: "/library", label: "Library", icon: "📚", kidVisible: true },
-  { path: "/routines", label: "Quests", icon: "📜", kidVisible: false },
-  { path: "/campaigns", label: "Campaigns", icon: "🗺️", kidVisible: false },
+  { path: "/quest-log", label: "Quest Log", icon: "📜", kidVisible: false },
+  { path: "/journeys", label: "Journeys", icon: "🧭", kidVisible: false },
   { path: "/shop", label: "Shop", icon: "🛒", kidVisible: true },
   { path: "/journal", label: "Journal", icon: "📖", kidVisible: false },
 ];
