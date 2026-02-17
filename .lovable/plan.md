@@ -1,122 +1,105 @@
 
 
-# Quest System Overhaul: Tasks, Scheduling, and XP Flow Fix
+# Fix Invite System and Streamline Member Management
 
-## Problems Identified
+## Problems Found
 
-1. **SkillCard has manual +5/+15 XP buttons** that bypass the quest system. XP should only come from completing routines, tasks, and campaigns -- not arbitrary manual adds. These buttons break the core game loop.
+1. **Immediate bug**: The database has CHECK constraints on both `family_invites` and `memberships` tables that only allow roles `'parent'` and `'kid'`. When you try to create an invite with role `'co-parent'` or `'guest'`, Postgres rejects it. This is why you see "violates check constraint family_invites_role_check".
 
-2. **No one-off tasks exist.** Everything is treated as a recurring routine. You can't create a single task like "Build Becky's desk" without it becoming a daily/weekly thing.
+2. **Guild Hall "Add Member" button** still uses the old local-only GameContext, not the real Supabase system. It needs to be replaced.
 
-3. **Quests/Campaigns need clearer distinction.** Campaigns are multi-step projects (build a desk, Disney trip). Tasks are individual completable items. A campaign should break down into tasks.
+3. **No clear flow for the three member scenarios**:
+   - Adding a kid on a shared device (no email needed, just a PIN)
+   - Inviting a spouse/co-parent to join on their own device (invite code)
+   - Adding a kid who will later get their own device
 
-4. **Dialog scroll bug.** The QuickAddRoutine dialog overflows on mobile without proper scrolling.
+## Plan
 
-5. **Scheduling is too limited.** Currently only "daily" or "weekly (pick days)" -- no way to do "Mon/Wed/Fri at 7am and 7pm" (specific days + times per day combined). The weekly option doesn't support times per day.
+### Step 1 -- Fix Database Constraints
 
-6. **Time-bound completion bonuses.** No way to set a deadline window where completing on time gives bonus XP.
+Run a migration to drop the old CHECK constraints and replace them with expanded ones:
 
----
+```text
+memberships.role:    parent, co-parent, kid, guest
+family_invites.role: parent, co-parent, kid, guest
+```
 
-## Changes
+This immediately fixes the "violates check constraint" error.
 
-### 1. Remove Manual XP Buttons from SkillCard
+### Step 2 -- Update `is_family_parent()` to include co-parents
 
-Remove the +5/+15 XP buttons from `SkillCard`. Skills display XP progress (read-only view showing what you've earned from completing things), not a manual increment tool.
+The existing `is_family_parent` function only checks `role = 'parent'`. It needs to also match `'co-parent'` so co-parents can manage the guild.
 
-**File:** `src/components/game/SkillCard.tsx`
-- Remove `showAddButtons` prop and the button rendering
-- Remove the `handleAddXP` function
-- Keep the XP bar, level display, and description (read-only)
+### Step 3 -- Replace Guild Hall "Add Member" with two clear actions
 
-### 2. Add One-Off Tasks
+Remove the old `CharacterEditDialog` button and replace it with two options:
 
-Rename and expand the "Add Routine" dialog into a unified "Add Quest" flow that supports three types:
-- **Routine** (recurring: daily/weekly/custom)
-- **Task** (one-off: single completion, optional due date)
-- **Campaign step** (part of a multi-step project -- handled on Campaigns page)
+- **"Add Kid Character"** -- Creates a character on this device (shared device scenario). Opens a simple dialog: enter name, pick emoji. The kid gets a character but no Supabase auth account. Parent can set a PIN for them later.
+- **"Invite Member"** -- Links to Guild Settings invites tab. For spouse/co-parent/older kid who will use their own device and email.
 
-**File:** `src/components/game/QuickAddRoutine.tsx` -- rename to `QuickAddQuest.tsx`
-- Add a "Quest Type" selector at the top: Routine | Task
-- When "Task" is selected:
-  - Hide recurrence fields
-  - Show optional due date picker
-  - Set `recurrenceType: "none"`, `type: "oneoff"`
-  - Generate a single QuestInstance immediately for that date (or today)
-- When "Routine" is selected: keep current behavior
+### Step 4 -- Create "Add Kid Character" dialog
 
-**Files updated:** All imports in `CharacterProfile.tsx`, `DomainsSkills.tsx`, `Routines.tsx`
+A new dialog component that:
+1. Takes a character name and avatar emoji
+2. Creates the character in Supabase (with `is_kid = true`)
+3. Optionally sets a 4-digit PIN right away
+4. Does NOT create a Supabase auth user (the kid logs in via PIN on the shared device)
+5. If the kid later gets their own device, a parent can generate an invite code to link them
 
-### 3. Enhanced Scheduling (Days + Times Combined)
+### Step 5 -- Clean up Guild Settings invite role options
 
-Currently weekly mode picks days but doesn't support `timesPerDay`. Fix this so the schedule builder works as:
-
-- **Daily**: pick times per day (1x, 2x, etc.)
-- **Weekly**: pick specific days AND times per day
-- **Custom**: interval days + times per day
-
-This means "Brush Teeth Mon/Wed/Fri at AM and PM" = weekly, daysOfWeek=[1,3,5], timesPerDay=2.
-
-**File:** `src/components/game/QuickAddQuest.tsx` (and `Routines.tsx` form)
-- Show `timesPerDay` field for ALL recurrence types (not just daily)
-- Add optional time labels (AM/PM/Morning/Evening) -- cosmetic, stored in `dueWindow`
-
-**File:** `src/lib/gameLogic.ts`
-- Update `generateQuestInstances` to generate multiple slots for weekly templates too (currently only daily gets `timesPerDay` slots)
-
-### 4. Time-Bound Bonus XP
-
-Add optional `dueWindow` support to the quest creation form:
-- Start time and end time (e.g., "before 8:00 AM")
-- If `notifyIfIncomplete` is true, flag it for parent view
-- Future: bonus XP for on-time completion (prep the field, note in UI as "Complete on time for bonus!")
-
-**File:** `src/components/game/QuickAddQuest.tsx`
-- Add collapsible "Advanced" section with `dueWindow` start/end time inputs
-- Add `notifyIfIncomplete` toggle
-
-### 5. Fix Dialog Scroll
-
-**File:** `src/components/game/QuickAddQuest.tsx`
-- The dialog already has `max-h-[90vh] overflow-y-auto` on QuickAddRoutine but the Routines page dialog at line 165 is missing it
-- Add `max-h-[90vh] overflow-y-auto` to all DialogContent instances
-
-**File:** `src/pages/Routines.tsx`
-- Add scroll classes to DialogContent
-
-### 6. Rename "Routines" Page to "Quests & Routines"
-
-Update the page title and navigation to reflect that it handles both one-off tasks and recurring routines. Show them in separate sections:
-- **Active Tasks** (one-off, not yet done)
-- **Routines** (recurring templates)
-
-**File:** `src/pages/Routines.tsx` -- update title, split display
-**File:** `src/components/layout/Navigation.tsx` -- update nav label
-
----
+The role dropdown already lists all four roles. After the constraint fix, it will just work.
 
 ## Technical Details
 
-### Files to Create
-- `src/components/game/QuickAddQuest.tsx` -- new unified quest creation dialog (replaces QuickAddRoutine)
+**Migration SQL:**
+```text
+-- Drop old constraints
+ALTER TABLE memberships DROP CONSTRAINT memberships_role_check;
+ALTER TABLE family_invites DROP CONSTRAINT family_invites_role_check;
 
-### Files to Modify
-- `src/components/game/SkillCard.tsx` -- remove manual XP buttons
-- `src/components/game/QuickAddRoutine.tsx` -- delete (replaced by QuickAddQuest)
-- `src/pages/Routines.tsx` -- rename to "Quests and Routines", split view, fix dialog scroll, support one-off tasks
-- `src/pages/CharacterProfile.tsx` -- update imports, add "Add Task" button alongside "Add Routine"
-- `src/pages/DomainsSkills.tsx` -- update imports
-- `src/components/layout/Navigation.tsx` -- rename nav item
-- `src/lib/gameLogic.ts` -- support `timesPerDay` for weekly templates in instance generation
-- `src/context/GameContext.tsx` -- no schema changes needed; ADD_QUEST_TEMPLATE already handles `type: "oneoff"` with `recurrenceType: "none"`
+-- Add expanded constraints
+ALTER TABLE memberships ADD CONSTRAINT memberships_role_check
+  CHECK (role IN ('parent', 'co-parent', 'kid', 'guest'));
 
-### Data Flow for One-Off Tasks
-When creating a one-off task:
-1. Create a QuestTemplate with `type: "oneoff"`, `recurrenceType: "none"`, `active: true`
-2. Immediately create a QuestInstance with `dueDate` set to the chosen date (or today)
-3. Completing it works exactly like completing a routine instance (same XP/gold flow)
-4. Template stays in the list until manually deleted or auto-archived
+ALTER TABLE family_invites ADD CONSTRAINT family_invites_role_check
+  CHECK (role IN ('parent', 'co-parent', 'kid', 'guest'));
+```
 
-### Instance Generation Fix
-In `generateQuestInstances`, the `timesPerDay` slot loop currently only runs for templates that pass `shouldGenerateForDay`. The fix is ensuring weekly templates also respect `timesPerDay` -- this is already structurally correct in the code but the form never lets you set `timesPerDay` for weekly, so enabling the form field is the main change.
+**Updated `is_family_parent` function:**
+```text
+CREATE OR REPLACE FUNCTION public.is_family_parent(p_family_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM memberships
+    WHERE family_id = p_family_id
+      AND user_id = auth.uid()
+      AND role IN ('parent', 'co-parent')
+  );
+$$;
+```
+
+**Files to modify:**
+- `src/pages/GuildHall.tsx` -- Replace "Add Member" with "Add Kid" and "Invite Member" buttons
+- New component: `src/components/game/AddKidDialog.tsx` -- Dialog to create a kid character + optional PIN
+- `src/pages/GuildSettings.tsx` -- Minor cleanup (no major changes needed once constraints are fixed)
+
+**Member access scenarios after changes:**
+
+```text
+Scenario                     Flow
+--------------------------   -------------------------------------------
+Kid on shared device         Parent clicks "Add Kid" -> enters name ->
+                             optionally sets PIN -> kid uses PIN login
+
+Spouse on own device         Parent goes to Guild Settings -> Invites ->
+                             generates code with "Co-Leader" role ->
+                             spouse goes to /join, enters code
+
+Kid gets own device later    Parent generates invite code with "Kid" role
+                             -> kid signs up on new device using code
+```
 
