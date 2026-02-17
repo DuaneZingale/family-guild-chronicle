@@ -14,6 +14,7 @@ import { LogOut, Settings, User } from "lucide-react";
 const allNavItems = [
   { path: "/", label: "My Character", icon: "🧙", kidVisible: true },
   { path: "/quest-log", label: "Quest Log", icon: "📜", kidVisible: true },
+  { path: "/quest-board", label: "Quest Board", icon: "📋", kidVisible: true },
   { path: "/paths", label: "Paths", icon: "⚔️", kidVisible: true },
   { path: "/guild", label: "Guild Hall", icon: "🏰", kidVisible: true },
   { path: "/journal", label: "Chronicle", icon: "📖", kidVisible: false },
