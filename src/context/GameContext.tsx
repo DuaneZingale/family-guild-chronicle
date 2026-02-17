@@ -6,6 +6,7 @@ import {
   completeQuest,
   addManualXP,
   completeCampaignStep,
+  uncompleteCampaignStep,
   spendGold,
   generateId,
   formatDate,
@@ -15,6 +16,7 @@ type GameAction =
   | { type: "COMPLETE_QUEST"; instanceId: string }
   | { type: "ADD_XP"; characterId: string; skillId: string; xp: number; gold?: number; note?: string }
   | { type: "COMPLETE_CAMPAIGN_STEP"; stepId: string }
+  | { type: "UNCOMPLETE_CAMPAIGN_STEP"; stepId: string }
   | { type: "SPEND_GOLD"; characterId: string; amount: number; note: string }
   | { type: "ADD_QUEST_TEMPLATE"; template: Omit<QuestTemplate, "id"> }
   | { type: "ADD_ONEOFF_TASK"; template: Omit<QuestTemplate, "id">; dueDate: string }
@@ -43,6 +45,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
     case "COMPLETE_CAMPAIGN_STEP": {
       return completeCampaignStep(state, action.stepId);
+    }
+    case "UNCOMPLETE_CAMPAIGN_STEP": {
+      return uncompleteCampaignStep(state, action.stepId);
     }
     case "SPEND_GOLD": {
       return spendGold(state, action.characterId, action.amount, action.note) ?? state;

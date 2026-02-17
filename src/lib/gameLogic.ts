@@ -250,6 +250,46 @@ export function completeCampaignStep(
   };
 }
 
+// Uncomplete a campaign step (undo)
+export function uncompleteCampaignStep(
+  state: GameState,
+  stepId: string
+): GameState {
+  const step = state.campaignSteps.find((s) => s.id === stepId);
+  if (!step || step.status !== "done") return state;
+
+  // Remove the XP event that was created for this step
+  const xpEvents = state.xpEvents.filter(
+    (e) => !(e.source === "campaign" && e.note === step.name && e.characterId === step.assignedToId && e.skillId === step.skillId)
+  );
+
+  // Revert gold
+  const updatedCharacters = state.characters.map((c) =>
+    c.id === step.assignedToId ? { ...c, gold: Math.max(0, c.gold - step.goldReward) } : c
+  );
+
+  // Set this step back to available, and any step after it back to locked
+  const updatedSteps = state.campaignSteps.map((s) => {
+    if (s.campaignId !== step.campaignId) return s;
+    if (s.id === stepId) return { ...s, status: "available" as const };
+    if (s.order > step.order && s.status !== "done") return { ...s, status: "locked" as const };
+    return s;
+  });
+
+  // Campaign can't be complete if we uncompleted a step
+  const updatedCampaigns = state.campaigns.map((c) =>
+    c.id === step.campaignId ? { ...c, status: "active" as const } : c
+  );
+
+  return {
+    ...state,
+    campaignSteps: updatedSteps,
+    campaigns: updatedCampaigns,
+    characters: updatedCharacters,
+    xpEvents,
+  };
+}
+
 // Spend gold
 export function spendGold(
   state: GameState,
