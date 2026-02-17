@@ -74,45 +74,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Set up auth listener FIRST
+    let isMounted = true;
+
+    // Listener for ONGOING auth changes — never await inside, never control loading
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (!isMounted) return;
         const user = session?.user ?? null;
-        let membership: FamilyMembership | null = null;
+        setState((s) => ({ ...s, user, session }));
 
         if (user) {
-          membership = await fetchMembership(user.id);
+          // Fire-and-forget; uses setTimeout to avoid Supabase deadlock
+          setTimeout(async () => {
+            const membership = await fetchMembership(user.id);
+            if (isMounted) setState((s) => ({ ...s, membership }));
+          }, 0);
+        } else {
+          setState((s) => ({ ...s, membership: null }));
         }
-
-        setState((s) => ({
-          ...s,
-          user,
-          session,
-          loading: false,
-          membership,
-        }));
       }
     );
 
-    // Then check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const user = session?.user ?? null;
-      let membership: FamilyMembership | null = null;
-
-      if (user) {
-        membership = await fetchMembership(user.id);
+    // INITIAL load — controls loading flag
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        const user = session?.user ?? null;
+        let membership: FamilyMembership | null = null;
+        if (user) {
+          membership = await fetchMembership(user.id);
+        }
+        if (isMounted) {
+          setState((s) => ({ ...s, user, session, membership }));
+        }
+      } finally {
+        if (isMounted) setState((s) => ({ ...s, loading: false }));
       }
+    };
 
-      setState((s) => ({
-        ...s,
-        user,
-        session,
-        loading: false,
-        membership,
-      }));
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function signOut() {
