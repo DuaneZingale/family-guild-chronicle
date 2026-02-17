@@ -1,87 +1,122 @@
 
 
-# Guild Hall Redesign + Character Profiles + Auth Planning
+# Quest System Overhaul: Tasks, Scheduling, and XP Flow Fix
 
-## Overview
-Redesign the Guild Hall layout with a prominent guild banner, compact member cards in a responsive row, a leaderboard, clickable character profiles, and character editing. Also lay groundwork for future Supabase auth.
+## Problems Identified
+
+1. **SkillCard has manual +5/+15 XP buttons** that bypass the quest system. XP should only come from completing routines, tasks, and campaigns -- not arbitrary manual adds. These buttons break the core game loop.
+
+2. **No one-off tasks exist.** Everything is treated as a recurring routine. You can't create a single task like "Build Becky's desk" without it becoming a daily/weekly thing.
+
+3. **Quests/Campaigns need clearer distinction.** Campaigns are multi-step projects (build a desk, Disney trip). Tasks are individual completable items. A campaign should break down into tasks.
+
+4. **Dialog scroll bug.** The QuickAddRoutine dialog overflows on mobile without proper scrolling.
+
+5. **Scheduling is too limited.** Currently only "daily" or "weekly (pick days)" -- no way to do "Mon/Wed/Fri at 7am and 7pm" (specific days + times per day combined). The weekly option doesn't support times per day.
+
+6. **Time-bound completion bonuses.** No way to set a deadline window where completing on time gives bonus XP.
 
 ---
 
-## 1. Guild Banner (Top of Guild Hall)
+## Changes
 
-Replace the current stacked character list with a large "Guild Card" at the top showing:
-- Guild emoji (castle) + "Family Guild" name in large fantasy font
-- Combined guild-level stats: total XP across all members, guild gold pool, active campaign count
-- A warm parchment-panel banner spanning full width
+### 1. Remove Manual XP Buttons from SkillCard
 
-## 2. Member Cards (Responsive Row)
+Remove the +5/+15 XP buttons from `SkillCard`. Skills display XP progress (read-only view showing what you've earned from completing things), not a manual increment tool.
 
-Below the guild banner, show individual members as compact square-ish cards in a responsive grid:
-- 4 columns on desktop, 2 on mobile
-- Each card: avatar emoji (large), name, level, XP progress bar, gold
-- Clickable -- navigates to `/character/:id`
+**File:** `src/components/game/SkillCard.tsx`
+- Remove `showAddButtons` prop and the button rendering
+- Remove the `handleAddXP` function
+- Keep the XP bar, level display, and description (read-only)
 
-## 3. Leaderboard Section
+### 2. Add One-Off Tasks
 
-Add a "Hall of Fame" leaderboard section on the Guild Hall page:
-- Ranks members by total XP (descending)
-- Shows rank number, avatar, name, level, and XP
-- Simple table/list with rank medals (gold/silver/bronze emoji for top 3)
+Rename and expand the "Add Routine" dialog into a unified "Add Quest" flow that supports three types:
+- **Routine** (recurring: daily/weekly/custom)
+- **Task** (one-off: single completion, optional due date)
+- **Campaign step** (part of a multi-step project -- handled on Campaigns page)
 
-## 4. Character Profile Page (`/character/:id`)
+**File:** `src/components/game/QuickAddRoutine.tsx` -- rename to `QuickAddQuest.tsx`
+- Add a "Quest Type" selector at the top: Routine | Task
+- When "Task" is selected:
+  - Hide recurrence fields
+  - Show optional due date picker
+  - Set `recurrenceType: "none"`, `type: "oneoff"`
+  - Generate a single QuestInstance immediately for that date (or today)
+- When "Routine" is selected: keep current behavior
 
-New page showing everything about one character:
-- Full character card (avatar, name, class, level, gold, XP bar)
-- **Their Quests Today**: filtered quest instances for this character
-- **Their Routines**: quest templates assigned to them
-- **Their Campaigns**: campaign steps assigned to them
-- **Their Skills**: all skills with this character's XP progress
-- Edit button opens character edit dialog
+**Files updated:** All imports in `CharacterProfile.tsx`, `DomainsSkills.tsx`, `Routines.tsx`
 
-## 5. Character Create/Edit
+### 3. Enhanced Scheduling (Days + Times Combined)
 
-A dialog/form accessible from:
-- Character profile page (edit button)
-- Guild Hall (add member button, parent-only)
+Currently weekly mode picks days but doesn't support `timesPerDay`. Fix this so the schedule builder works as:
 
-Fields: name, roleClass, avatarEmoji (picker from a preset list), isKid toggle
+- **Daily**: pick times per day (1x, 2x, etc.)
+- **Weekly**: pick specific days AND times per day
+- **Custom**: interval days + times per day
 
-New reducer actions: `ADD_CHARACTER`, `UPDATE_CHARACTER`, `DELETE_CHARACTER`
+This means "Brush Teeth Mon/Wed/Fri at AM and PM" = weekly, daysOfWeek=[1,3,5], timesPerDay=2.
 
-## 6. Reusable Guild Banner Component
+**File:** `src/components/game/QuickAddQuest.tsx` (and `Routines.tsx` form)
+- Show `timesPerDay` field for ALL recurrence types (not just daily)
+- Add optional time labels (AM/PM/Morning/Evening) -- cosmetic, stored in `dueWindow`
 
-Create a `GuildBanner` component that can be reused across pages (Guild Hall, and potentially others). It always shows the guild identity at the top.
+**File:** `src/lib/gameLogic.ts`
+- Update `generateQuestInstances` to generate multiple slots for weekly templates too (currently only daily gets `timesPerDay` slots)
 
-## 7. Auth Planning (Structural Only)
+### 4. Time-Bound Bonus XP
 
-No Supabase is connected yet, so this is code-structure prep only:
-- Add a `TODO` comment block in a new file `src/lib/auth-plan.ts` documenting the planned auth architecture:
-  - Parents get full access (admin-like)
-  - Kids get restricted "Kid Mode" access
-  - Each character maps to a Supabase auth user
-  - Character.id will become a FK to a profiles table
-- No actual auth code yet -- just the roadmap file
+Add optional `dueWindow` support to the quest creation form:
+- Start time and end time (e.g., "before 8:00 AM")
+- If `notifyIfIncomplete` is true, flag it for parent view
+- Future: bonus XP for on-time completion (prep the field, note in UI as "Complete on time for bonus!")
+
+**File:** `src/components/game/QuickAddQuest.tsx`
+- Add collapsible "Advanced" section with `dueWindow` start/end time inputs
+- Add `notifyIfIncomplete` toggle
+
+### 5. Fix Dialog Scroll
+
+**File:** `src/components/game/QuickAddQuest.tsx`
+- The dialog already has `max-h-[90vh] overflow-y-auto` on QuickAddRoutine but the Routines page dialog at line 165 is missing it
+- Add `max-h-[90vh] overflow-y-auto` to all DialogContent instances
+
+**File:** `src/pages/Routines.tsx`
+- Add scroll classes to DialogContent
+
+### 6. Rename "Routines" Page to "Quests & Routines"
+
+Update the page title and navigation to reflect that it handles both one-off tasks and recurring routines. Show them in separate sections:
+- **Active Tasks** (one-off, not yet done)
+- **Routines** (recurring templates)
+
+**File:** `src/pages/Routines.tsx` -- update title, split display
+**File:** `src/components/layout/Navigation.tsx` -- update nav label
 
 ---
 
 ## Technical Details
 
-### New Files
-- `src/pages/CharacterProfile.tsx` -- character detail page
-- `src/components/game/GuildBanner.tsx` -- reusable guild banner
-- `src/components/game/Leaderboard.tsx` -- leaderboard component
-- `src/components/game/CharacterEditDialog.tsx` -- create/edit character form
-- `src/lib/auth-plan.ts` -- auth architecture notes (TODO doc)
+### Files to Create
+- `src/components/game/QuickAddQuest.tsx` -- new unified quest creation dialog (replaces QuickAddRoutine)
 
-### Modified Files
-- `src/App.tsx` -- add `/character/:id` route
-- `src/pages/GuildHall.tsx` -- replace layout with banner + member grid + leaderboard + today's quests
-- `src/components/game/CharacterCard.tsx` -- add a new `"tile"` variant for the compact square cards
-- `src/context/GameContext.tsx` -- add `ADD_CHARACTER`, `UPDATE_CHARACTER`, `DELETE_CHARACTER` actions
-- `src/types/game.ts` -- no schema changes needed (Character type already has all fields)
-- `src/components/layout/Navigation.tsx` -- no changes needed
+### Files to Modify
+- `src/components/game/SkillCard.tsx` -- remove manual XP buttons
+- `src/components/game/QuickAddRoutine.tsx` -- delete (replaced by QuickAddQuest)
+- `src/pages/Routines.tsx` -- rename to "Quests and Routines", split view, fix dialog scroll, support one-off tasks
+- `src/pages/CharacterProfile.tsx` -- update imports, add "Add Task" button alongside "Add Routine"
+- `src/pages/DomainsSkills.tsx` -- update imports
+- `src/components/layout/Navigation.tsx` -- rename nav item
+- `src/lib/gameLogic.ts` -- support `timesPerDay` for weekly templates in instance generation
+- `src/context/GameContext.tsx` -- no schema changes needed; ADD_QUEST_TEMPLATE already handles `type: "oneoff"` with `recurrenceType: "none"`
 
-### Route Structure
-- `/` -- Guild Hall (banner, members row, leaderboard, today's quests)
-- `/character/:id` -- Character profile with their quests, routines, campaigns, skills
+### Data Flow for One-Off Tasks
+When creating a one-off task:
+1. Create a QuestTemplate with `type: "oneoff"`, `recurrenceType: "none"`, `active: true`
+2. Immediately create a QuestInstance with `dueDate` set to the chosen date (or today)
+3. Completing it works exactly like completing a routine instance (same XP/gold flow)
+4. Template stays in the list until manually deleted or auto-archived
+
+### Instance Generation Fix
+In `generateQuestInstances`, the `timesPerDay` slot loop currently only runs for templates that pass `shouldGenerateForDay`. The fix is ensuring weekly templates also respect `timesPerDay` -- this is already structurally correct in the code but the form never lets you set `timesPerDay` for weekly, so enabling the form field is the main change.
 
