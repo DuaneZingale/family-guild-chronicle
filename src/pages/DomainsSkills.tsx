@@ -3,7 +3,7 @@ import { useGame } from "@/context/GameContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { CharacterCard } from "@/components/game/CharacterCard";
 import { SkillCard } from "@/components/game/SkillCard";
-import { QuickAddRoutine } from "@/components/game/QuickAddRoutine";
+import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { getSkillsByDomain } from "@/lib/gameLogic";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -58,11 +58,11 @@ export default function DomainsSkills() {
 
           {/* Quick add */}
           <div className="mb-6">
-            <QuickAddRoutine
+            <QuickAddQuest
               preSelectedCharacterIds={selectedCharacter ? [selectedCharacter.id] : []}
               trigger={
                 <Button>
-                  <Plus className="h-4 w-4 mr-2" /> Add Routine for {selectedCharacter.name}
+                  <Plus className="h-4 w-4 mr-2" /> Add Quest for {selectedCharacter.name}
                 </Button>
               }
             />
