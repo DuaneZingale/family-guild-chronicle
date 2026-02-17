@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
 import { Check, Lock, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddCampaignDialog } from "@/components/game/AddCampaignDialog";
 
 export default function Campaigns() {
   const { state, dispatch } = useGame();
@@ -16,11 +17,15 @@ export default function Campaigns() {
     <PageWrapper
       title="Campaigns"
       subtitle="Epic multi-step adventures for the whole guild"
+      action={<AddCampaignDialog />}
     >
       {state.campaigns.length === 0 ? (
         <div className="parchment-panel p-8 text-center">
           <span className="text-4xl block mb-2">🗺️</span>
           <p className="text-lg text-muted-foreground">No campaigns yet.</p>
+          <div className="mt-4">
+            <AddCampaignDialog />
+          </div>
         </div>
       ) : (
         <div className="space-y-8">
