@@ -14,6 +14,7 @@ import Campaigns from "./pages/Campaigns";
 import RewardsShop from "./pages/RewardsShop";
 import Journal from "./pages/Journal";
 import Library from "./pages/Library";
+import QuestBoard from "./pages/QuestBoard";
 import Journeys from "./pages/Journeys";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -118,6 +119,16 @@ const App = () => (
             />
             {/* Legacy redirect */}
             <Route path="/domains" element={<Navigate to="/paths" replace />} />
+            <Route
+              path="/quest-board"
+              element={
+                <AuthGate>
+                  <GameProvider>
+                    <QuestBoard />
+                  </GameProvider>
+                </AuthGate>
+              }
+            />
             <Route
               path="/library"
               element={
