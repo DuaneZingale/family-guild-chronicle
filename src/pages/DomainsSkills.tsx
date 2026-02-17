@@ -83,7 +83,7 @@ export default function PathsSkills() {
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-3xl">{path.icon}</span>
                     <div>
-                      <h2 className="font-fantasy text-2xl">{path.name}</h2>
+                      <h2 className="font-fantasy text-2xl">The {path.name}</h2>
                       <p className="text-sm text-muted-foreground">
                         {path.description}
                       </p>
