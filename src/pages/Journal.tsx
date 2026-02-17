@@ -25,7 +25,7 @@ export default function Journal() {
 
   return (
     <PageWrapper
-      title="Campaign Journal"
+      title="Chronicle"
       subtitle="A record of all your adventures"
     >
       {sortedEvents.length === 0 ? (

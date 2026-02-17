@@ -93,7 +93,7 @@ export default function GuildHall() {
               <span className="text-4xl block mb-2">🎉</span>
               <p className="text-lg text-muted-foreground">No quests for today!</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Check the Routines page to add some.
+                Head to the Quest Log to add daily quests.
               </p>
             </div>
           ) : (

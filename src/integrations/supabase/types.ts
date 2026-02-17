@@ -332,6 +332,96 @@ export type Database = {
           },
         ]
       }
+      journey_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          journey_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          journey_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          journey_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_items_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journeys: {
+        Row: {
+          created_at: string
+          description: string
+          family_id: string
+          id: string
+          owner_character_id: string | null
+          path_id: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          family_id: string
+          id?: string
+          owner_character_id?: string | null
+          path_id?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          family_id?: string
+          id?: string
+          owner_character_id?: string | null
+          path_id?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journeys_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journeys_owner_character_id_fkey"
+            columns: ["owner_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journeys_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "path_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kid_pins: {
         Row: {
           character_id: string

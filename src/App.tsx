@@ -8,11 +8,12 @@ import { GameProvider } from "@/context/GameContext";
 import GuildHall from "./pages/GuildHall";
 import CharacterProfile from "./pages/CharacterProfile";
 import PathsSkills from "./pages/DomainsSkills";
-import Routines from "./pages/Routines";
+import QuestLog from "./pages/QuestLog";
 import Campaigns from "./pages/Campaigns";
 import RewardsShop from "./pages/RewardsShop";
 import Journal from "./pages/Journal";
 import Library from "./pages/Library";
+import Journeys from "./pages/Journeys";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -116,12 +117,24 @@ const App = () => (
                 </AuthGate>
               }
             />
+            {/* Legacy redirect */}
+            <Route path="/routines" element={<Navigate to="/quest-log" replace />} />
             <Route
-              path="/routines"
+              path="/quest-log"
               element={
                 <AuthGate>
                   <GameProvider>
-                    <Routines />
+                    <QuestLog />
+                  </GameProvider>
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/journeys"
+              element={
+                <AuthGate>
+                  <GameProvider>
+                    <Journeys />
                   </GameProvider>
                 </AuthGate>
               }
