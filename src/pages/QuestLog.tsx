@@ -46,9 +46,9 @@ export default function QuestLog() {
 
   const activeTemplates = state.questTemplates.filter((t) => t.visibility === "active");
   const dailyQuests = activeTemplates.filter((t) => t.type === "recurring");
-  const guildTasks = activeTemplates.filter((t) => t.type === "oneoff");
+  const guildQuests = activeTemplates.filter((t) => t.type === "oneoff");
 
-  const getTaskStatus = (templateId: string) => {
+  const getQuestStatus = (templateId: string) => {
     const instances = state.questInstances.filter((qi) => qi.templateId === templateId);
     return instances.some((qi) => qi.status === "done") ? "done" : "available";
   };
@@ -67,7 +67,7 @@ export default function QuestLog() {
       <Tabs defaultValue="daily" className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="daily">🔄 Daily Quests</TabsTrigger>
-          <TabsTrigger value="guild-tasks">⚔️ Guild Tasks</TabsTrigger>
+          <TabsTrigger value="guild-quests">⚔️ Guild Quests</TabsTrigger>
           <TabsTrigger value="campaigns">🗺️ Campaigns</TabsTrigger>
           <TabsTrigger value="journeys">🧭 Journeys</TabsTrigger>
         </TabsList>
@@ -106,26 +106,26 @@ export default function QuestLog() {
           )}
         </TabsContent>
 
-        {/* Guild Tasks Tab */}
-        <TabsContent value="guild-tasks">
+        {/* Guild Quests Tab */}
+        <TabsContent value="guild-quests">
           <div className="flex gap-2 mb-4">
             <QuickAddQuest defaultQuestType="task" trigger={
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Guild Task</Button>
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Guild Quest</Button>
             } />
           </div>
 
-          {guildTasks.length === 0 ? (
+          {guildQuests.length === 0 ? (
             <div className="parchment-panel p-8 text-center">
               <span className="text-4xl block mb-2">⚔️</span>
-              <p className="text-lg text-muted-foreground">No guild tasks yet.</p>
+              <p className="text-lg text-muted-foreground">No guild quests yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Add one-time quests like "Clean the garage" or "Fix the fence."
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {guildTasks.map((template) => {
-                const taskStatus = getTaskStatus(template.id);
+              {guildQuests.map((template) => {
+                const questStatus = getQuestStatus(template.id);
                 return (
                   <QuestTemplateRow
                     key={template.id}
@@ -134,8 +134,8 @@ export default function QuestLog() {
                     importanceIcon={importanceIcon}
                     onEdit={() => openEditDialog(template)}
                     onDelete={() => handleDelete(template.id)}
-                    isDone={taskStatus === "done"}
-                    badge={taskStatus === "done" ? "✅ Complete" : "One-time"}
+                    isDone={questStatus === "done"}
+                    badge={questStatus === "done" ? "✅ Complete" : "One-time"}
                   />
                 );
               })}
