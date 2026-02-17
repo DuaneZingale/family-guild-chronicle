@@ -1,19 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { GuildBanner } from "@/components/game/GuildBanner";
 import { CharacterCard } from "@/components/game/CharacterCard";
 import { Leaderboard } from "@/components/game/Leaderboard";
-import { CharacterEditDialog } from "@/components/game/CharacterEditDialog";
+import { AddKidDialog } from "@/components/game/AddKidDialog";
 import { QuestCard } from "@/components/game/QuestCard";
 import { XPEventCard } from "@/components/game/XPEventCard";
 import { getTodayQuests, getRecentEvents, getCharacter } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, UserPlus, Settings } from "lucide-react";
 
 export default function GuildHall() {
   const { state } = useGame();
+  const { membership } = useAuth();
   const navigate = useNavigate();
+  const isParent = membership?.role === "parent" || membership?.role === "co-parent";
 
   const todayQuests = getTodayQuests(state);
   const recentEvents = getRecentEvents(state, 5);
@@ -45,14 +48,23 @@ export default function GuildHall() {
             <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
               <span>👥</span> Guild Members
             </h2>
-            {!state.kidModeCharacterId && (
-              <CharacterEditDialog
-                trigger={
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-1" /> Add Member
-                  </Button>
-                }
-              />
+            {isParent && (
+              <div className="flex gap-2">
+                <AddKidDialog
+                  trigger={
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-1" /> Add Kid
+                    </Button>
+                  }
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/guild-settings?tab=invites")}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" /> Invite
+                </Button>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
