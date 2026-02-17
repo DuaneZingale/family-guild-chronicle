@@ -26,7 +26,7 @@ export default function Signup() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
@@ -35,6 +35,14 @@ export default function Signup() {
 
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+    } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+      // Supabase returns an empty identities array when the user already exists
+      toast({
+        title: "Account already exists",
+        description: "This email is already registered. Please sign in instead.",
+        variant: "destructive",
+      });
+      navigate("/login");
     } else {
       toast({ title: "Check your email!", description: "We sent a confirmation link." });
       navigate("/family-setup");

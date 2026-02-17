@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 const AVATAR_OPTIONS = ["🧙‍♂️", "🧝‍♀️", "🏹", "🗡️", "🛡️", "🧙", "🧚", "🦊", "🐉", "🦅", "🌟", "⚡", "🔥", "🌊"];
 
 export default function FamilySetup() {
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership, membership, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,6 +42,29 @@ export default function FamilySetup() {
       toast({ title: "Guild founded! ⚔️", description: `Welcome to ${familyName}!` });
       navigate("/");
     }
+  }
+
+  // If not logged in, redirect to login
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="parchment-panel w-full max-w-md p-8 space-y-4 text-center">
+          <span className="text-5xl">🔒</span>
+          <h1 className="text-xl font-fantasy text-foreground">Sign in required</h1>
+          <p className="text-muted-foreground text-sm">You need to sign in before creating a guild.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate("/login")}>Sign In</Button>
+            <Button variant="outline" onClick={() => navigate("/signup")}>Create Account</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If already has a family, redirect home
+  if (membership) {
+    navigate("/");
+    return null;
   }
 
   return (
@@ -118,6 +141,15 @@ export default function FamilySetup() {
             {loading ? "Creating…" : "⚔️ Found the Guild"}
           </Button>
         </form>
+
+        <div className="text-center text-sm">
+          <p className="text-muted-foreground">
+            Wrong account?{" "}
+            <button onClick={() => { signOut(); navigate("/login"); }} className="text-primary hover:underline">
+              Sign out & go to Login
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );
