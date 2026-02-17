@@ -1,7 +1,6 @@
 import { useGame } from "@/context/GameContext";
 import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
-import { Button } from "@/components/ui/button";
-import { Check, Clock } from "lucide-react";
+import { Check, Swords } from "lucide-react";
 import type { QuestInstance, QuestTemplate } from "@/types/game";
 import { cn } from "@/lib/utils";
 
@@ -22,28 +21,32 @@ export function QuestCard({ instance, template }: QuestCardProps) {
     : null;
 
   const handleComplete = () => {
-    dispatch({ type: "COMPLETE_QUEST", instanceId: instance.id });
+    if (!isDone) dispatch({ type: "COMPLETE_QUEST", instanceId: instance.id });
   };
 
   return (
     <div
+      role={!isDone ? "button" : undefined}
+      tabIndex={!isDone ? 0 : undefined}
+      onClick={handleComplete}
+      onKeyDown={!isDone ? (e) => e.key === "Enter" && handleComplete() : undefined}
       className={cn(
-        "quest-card flex items-center gap-3",
-        isDone && "opacity-60"
+        "quest-card flex items-center gap-3 transition-all",
+        isDone && "opacity-60",
+        !isDone && "cursor-pointer hover:border-primary/40"
       )}
     >
-      <Button
-        size="icon"
-        variant={isDone ? "secondary" : "outline"}
+      {/* Completion indicator */}
+      <div
         className={cn(
-          "h-10 w-10 rounded-full shrink-0 transition-all",
-          isDone && "bg-xp text-xp-foreground"
+          "h-10 w-10 rounded-full flex items-center justify-center shrink-0 border-2 transition-all",
+          isDone
+            ? "bg-xp border-xp text-xp-foreground"
+            : "border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground"
         )}
-        onClick={handleComplete}
-        disabled={isDone}
       >
-        {isDone ? <Check className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
-      </Button>
+        {isDone ? <Check className="h-5 w-5" /> : <Swords className="h-4 w-4" />}
+      </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -72,13 +75,9 @@ export function QuestCard({ instance, template }: QuestCardProps) {
       </div>
 
       {!isDone && (
-        <Button
-          size="sm"
-          onClick={handleComplete}
-          className="shrink-0"
-        >
-          Complete
-        </Button>
+        <span className="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 sm:hidden">
+          Tap to complete
+        </span>
       )}
     </div>
   );
