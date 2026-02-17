@@ -64,12 +64,22 @@ export function QuestCard({ instance, template }: QuestCardProps) {
         </div>
       </div>
       
-      <div className="flex items-center gap-3 text-sm shrink-0">
+      <div className="flex items-center gap-2 text-sm shrink-0">
         <span className="text-xp font-semibold">+{template.xpReward} XP</span>
         {template.goldReward > 0 && (
           <span className="text-gold font-semibold">+{template.goldReward} 💰</span>
         )}
       </div>
+
+      {!isDone && (
+        <Button
+          size="sm"
+          onClick={handleComplete}
+          className="shrink-0"
+        >
+          Complete
+        </Button>
+      )}
     </div>
   );
 }
