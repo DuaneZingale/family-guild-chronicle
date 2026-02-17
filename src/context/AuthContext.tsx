@@ -5,7 +5,7 @@ import type { User, Session } from "@supabase/supabase-js";
 interface FamilyMembership {
   familyId: string;
   familyName: string;
-  role: "parent" | "kid";
+  role: string;
   characterId: string | null;
 }
 
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       familyId: data.family_id,
       familyName: familyRow?.name ?? "",
-      role: data.role as "parent" | "kid",
+      role: data.role,
       characterId: link?.character_id ?? null,
     };
   }

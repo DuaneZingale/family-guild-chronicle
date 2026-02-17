@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import FamilySetup from "./pages/FamilySetup";
 import KidPinLogin from "./pages/KidPinLogin";
 import JoinFamily from "./pages/JoinFamily";
+import GuildSettings from "./pages/GuildSettings";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,16 @@ const App = () => (
                 <AuthGate>
                   <GameProvider>
                     <Journal />
+                  </GameProvider>
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/guild-settings"
+              element={
+                <AuthGate>
+                  <GameProvider>
+                    <GuildSettings />
                   </GameProvider>
                 </AuthGate>
               }
