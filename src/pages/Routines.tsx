@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
 import { Plus, Trash2, Edit } from "lucide-react";
 import type { QuestTemplate, QuestImportance, QuestAutonomy } from "@/types/game";
@@ -79,16 +80,15 @@ export default function Routines() {
     if (!formData.name || formData.assignedToIds.length === 0 || !formData.skillId) return;
 
     if (editingTemplate) {
-      // When editing, update just the one template
       const templateData: Omit<QuestTemplate, "id"> = {
         name: formData.name,
-        type: "recurring",
+        type: editingTemplate.type,
         assignedToId: formData.assignedToIds[0],
         skillId: formData.skillId,
         xpReward: formData.xpReward,
         goldReward: formData.goldReward,
         recurrenceType: formData.recurrenceType,
-        timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
+        timesPerDay: formData.timesPerDay > 1 ? formData.timesPerDay : undefined,
         daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
         active: editingTemplate.active,
         importance: formData.importance,
@@ -100,7 +100,6 @@ export default function Routines() {
         template: { ...templateData, id: editingTemplate.id },
       });
     } else {
-      // Create one template per selected character
       for (const charId of formData.assignedToIds) {
         const templateData: Omit<QuestTemplate, "id"> = {
           name: formData.name,
@@ -110,7 +109,7 @@ export default function Routines() {
           xpReward: formData.xpReward,
           goldReward: formData.goldReward,
           recurrenceType: formData.recurrenceType,
-          timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
+          timesPerDay: formData.timesPerDay > 1 ? formData.timesPerDay : undefined,
           daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
           active: true,
           importance: formData.importance,
@@ -136,9 +135,7 @@ export default function Routines() {
     });
   };
 
-  // All skills available (shared definitions)
   const allSkills = state.skills;
-
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const importanceIcon: Record<QuestImportance, string> = {
@@ -147,25 +144,40 @@ export default function Routines() {
     delight: "🟢",
   };
 
-  // Only show active templates
+  // Split templates into tasks vs routines
   const activeTemplates = state.questTemplates.filter((t) => t.visibility === "active");
+  const oneoffTasks = activeTemplates.filter((t) => t.type === "oneoff");
+  const routineTemplates = activeTemplates.filter((t) => t.type === "recurring");
+
+  // Check if oneoff tasks have completed instances
+  const getTaskStatus = (templateId: string) => {
+    const instances = state.questInstances.filter((qi) => qi.templateId === templateId);
+    return instances.some((qi) => qi.status === "done") ? "done" : "available";
+  };
 
   return (
-    <PageWrapper title="Routines" subtitle="Manage recurring quests and habits">
+    <PageWrapper title="Quests & Routines" subtitle="Manage tasks, habits, and recurring quests">
+      <div className="flex gap-2 mb-6">
+        <QuickAddQuest defaultQuestType="routine" />
+        <QuickAddQuest
+          defaultQuestType="task"
+          trigger={
+            <Button size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" /> Add Task
+            </Button>
+          }
+        />
+      </div>
+
+      {/* Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogTrigger asChild>
-          <Button className="mb-6">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Routine
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-fantasy text-xl">
-              {editingTemplate ? "Edit Routine" : "New Routine"}
+              {editingTemplate ? "Edit Quest" : "New Routine"}
             </DialogTitle>
           </DialogHeader>
 
@@ -266,9 +278,7 @@ export default function Routines() {
                   value={formData.importance}
                   onValueChange={(v) => setFormData({ ...formData, importance: v as QuestImportance })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="essential">🔴 Essential</SelectItem>
                     <SelectItem value="growth">🟡 Growth</SelectItem>
@@ -282,9 +292,7 @@ export default function Routines() {
                   value={formData.autonomyLevel}
                   onValueChange={(v) => setFormData({ ...formData, autonomyLevel: v as QuestAutonomy })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="self_start">Self Start</SelectItem>
                     <SelectItem value="prompt_ok">Prompt OK</SelectItem>
@@ -317,66 +325,67 @@ export default function Routines() {
               </div>
             </div>
 
-            <div>
-              <Label>Recurrence</Label>
-              <Select
-                value={formData.recurrenceType}
-                onValueChange={(v) => setFormData({ ...formData, recurrenceType: v as QuestTemplate["recurrenceType"] })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {formData.recurrenceType === "daily" && (
-              <div>
-                <Label htmlFor="times">Times per Day</Label>
-                <Input
-                  id="times"
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={formData.timesPerDay}
-                  onChange={(e) => setFormData({ ...formData, timesPerDay: Number(e.target.value) })}
-                />
-              </div>
-            )}
-
-            {formData.recurrenceType === "weekly" && (
-              <div>
-                <Label>Days of Week</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {dayLabels.map((day, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => {
-                        const days = formData.daysOfWeek.includes(i)
-                          ? formData.daysOfWeek.filter((d) => d !== i)
-                          : [...formData.daysOfWeek, i];
-                        setFormData({ ...formData, daysOfWeek: days });
-                      }}
-                      className={`px-3 py-1 rounded border transition-colors ${
-                        formData.daysOfWeek.includes(i)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card border-border hover:border-primary"
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
+            {editingTemplate?.type !== "oneoff" && (
+              <>
+                <div>
+                  <Label>Recurrence</Label>
+                  <Select
+                    value={formData.recurrenceType}
+                    onValueChange={(v) => setFormData({ ...formData, recurrenceType: v as QuestTemplate["recurrenceType"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+
+                <div>
+                  <Label htmlFor="times">Times per Day</Label>
+                  <Input
+                    id="times"
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={formData.timesPerDay}
+                    onChange={(e) => setFormData({ ...formData, timesPerDay: Number(e.target.value) })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">e.g., 2x for morning & evening</p>
+                </div>
+
+                {formData.recurrenceType === "weekly" && (
+                  <div>
+                    <Label>Days of Week</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {dayLabels.map((day, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            const days = formData.daysOfWeek.includes(i)
+                              ? formData.daysOfWeek.filter((d) => d !== i)
+                              : [...formData.daysOfWeek, i];
+                            setFormData({ ...formData, daysOfWeek: days });
+                          }}
+                          className={`px-3 py-1 rounded border transition-colors ${
+                            formData.daysOfWeek.includes(i)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card border-border hover:border-primary"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <Button onClick={handleSubmit} className="w-full">
               {editingTemplate
-                ? "Update Routine"
+                ? "Update Quest"
                 : formData.assignedToIds.length > 1
                 ? `Create for ${formData.assignedToIds.length} members`
                 : "Create Routine"}
@@ -385,80 +394,128 @@ export default function Routines() {
         </DialogContent>
       </Dialog>
 
-      {/* Existing routines */}
-      <div className="space-y-4">
-        {activeTemplates.length === 0 ? (
-          <div className="parchment-panel p-8 text-center">
-            <span className="text-4xl block mb-2">📜</span>
-            <p className="text-lg text-muted-foreground">No routines yet.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create one or browse the Guild Library!
-            </p>
-          </div>
-        ) : (
-          activeTemplates.map((template) => {
-            const character = getCharacter(state, template.assignedToId);
-            const skill = getSkill(state, template.skillId);
-            const domain = skill ? getDomain(state, skill.domainId) : null;
+      {/* Active Tasks (one-off) */}
+      {oneoffTasks.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-fantasy text-xl mb-4 flex items-center gap-2">
+            <span>✅</span> Active Tasks
+          </h2>
+          <div className="space-y-4">
+            {oneoffTasks.map((template) => {
+              const character = getCharacter(state, template.assignedToId);
+              const skill = getSkill(state, template.skillId);
+              const domain = skill ? getDomain(state, skill.domainId) : null;
+              const taskStatus = getTaskStatus(template.id);
 
-            return (
-              <div
-                key={template.id}
-                className={`parchment-panel p-4 ${!template.active ? "opacity-50" : ""}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm">{importanceIcon[template.importance]}</span>
-                      <span className="font-fantasy text-lg">{template.name}</span>
-                      <span className="text-xs px-2 py-0.5 bg-muted rounded capitalize">
-                        {template.recurrenceType}
-                        {template.timesPerDay && template.timesPerDay > 1
-                          ? ` (${template.timesPerDay}x)`
-                          : ""}
-                      </span>
+              return (
+                <div
+                  key={template.id}
+                  className={`parchment-panel p-4 ${taskStatus === "done" ? "opacity-50" : ""}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm">{importanceIcon[template.importance]}</span>
+                        <span className="font-fantasy text-lg">{template.name}</span>
+                        <span className="text-xs px-2 py-0.5 bg-muted rounded">
+                          {taskStatus === "done" ? "✅ Done" : "One-off"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <span>{character?.avatarEmoji} {character?.name}</span>
+                        <span>•</span>
+                        <span>{domain?.icon} {skill?.name}</span>
+                        <span>•</span>
+                        <span className="text-xp">+{template.xpReward} XP</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                      <span>{character?.avatarEmoji} {character?.name}</span>
-                      <span>•</span>
-                      <span>{domain?.icon} {skill?.name}</span>
-                      <span>•</span>
-                      <span className="text-xp">+{template.xpReward} XP</span>
-                      {template.goldReward > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="text-gold">+{template.goldReward} 💰</span>
-                        </>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(template)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={template.active}
-                      onCheckedChange={() => handleToggleActive(template)}
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => openEditDialog(template)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDelete(template.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Routines (recurring) */}
+      <section>
+        <h2 className="font-fantasy text-xl mb-4 flex items-center gap-2">
+          <span>🔄</span> Routines
+        </h2>
+        <div className="space-y-4">
+          {routineTemplates.length === 0 ? (
+            <div className="parchment-panel p-8 text-center">
+              <span className="text-4xl block mb-2">📜</span>
+              <p className="text-lg text-muted-foreground">No routines yet.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Create one or browse the Guild Library!
+              </p>
+            </div>
+          ) : (
+            routineTemplates.map((template) => {
+              const character = getCharacter(state, template.assignedToId);
+              const skill = getSkill(state, template.skillId);
+              const domain = skill ? getDomain(state, skill.domainId) : null;
+
+              return (
+                <div
+                  key={template.id}
+                  className={`parchment-panel p-4 ${!template.active ? "opacity-50" : ""}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm">{importanceIcon[template.importance]}</span>
+                        <span className="font-fantasy text-lg">{template.name}</span>
+                        <span className="text-xs px-2 py-0.5 bg-muted rounded capitalize">
+                          {template.recurrenceType}
+                          {template.timesPerDay && template.timesPerDay > 1
+                            ? ` (${template.timesPerDay}x)`
+                            : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <span>{character?.avatarEmoji} {character?.name}</span>
+                        <span>•</span>
+                        <span>{domain?.icon} {skill?.name}</span>
+                        <span>•</span>
+                        <span className="text-xp">+{template.xpReward} XP</span>
+                        {template.goldReward > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="text-gold">+{template.goldReward} 💰</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={template.active}
+                        onCheckedChange={() => handleToggleActive(template)}
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(template)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDelete(template.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
     </PageWrapper>
   );
 }

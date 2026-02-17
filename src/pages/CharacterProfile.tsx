@@ -5,7 +5,7 @@ import { CharacterCard } from "@/components/game/CharacterCard";
 import { QuestCard } from "@/components/game/QuestCard";
 import { SkillCard } from "@/components/game/SkillCard";
 import { CharacterEditDialog } from "@/components/game/CharacterEditDialog";
-import { QuickAddRoutine } from "@/components/game/QuickAddRoutine";
+import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { GuildBanner } from "@/components/game/GuildBanner";
 import { getTodayQuests, getSkillsByDomain, getDomain } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
@@ -77,11 +77,11 @@ export default function CharacterProfile() {
             <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
               <span>📜</span> Today's Quests
             </h2>
-            <QuickAddRoutine
+            <QuickAddQuest
               preSelectedCharacterIds={[character.id]}
               trigger={
                 <Button size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" /> Add Routine
+                  <Plus className="h-4 w-4 mr-1" /> Add Quest
                 </Button>
               }
             />
@@ -107,7 +107,7 @@ export default function CharacterProfile() {
             <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
               <span>🔄</span> Routines
             </h2>
-            <QuickAddRoutine
+            <QuickAddQuest
               preSelectedCharacterIds={[character.id]}
               trigger={
                 <Button size="sm" variant="outline">

@@ -17,6 +17,7 @@ type GameAction =
   | { type: "COMPLETE_CAMPAIGN_STEP"; stepId: string }
   | { type: "SPEND_GOLD"; characterId: string; amount: number; note: string }
   | { type: "ADD_QUEST_TEMPLATE"; template: Omit<QuestTemplate, "id"> }
+  | { type: "ADD_ONEOFF_TASK"; template: Omit<QuestTemplate, "id">; dueDate: string }
   | { type: "UPDATE_QUEST_TEMPLATE"; template: QuestTemplate }
   | { type: "DELETE_QUEST_TEMPLATE"; templateId: string }
   | { type: "ACTIVATE_SUGGESTED_QUEST"; template: Omit<QuestTemplate, "id">; assignedToId: string }
@@ -57,6 +58,24 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...newState,
         questInstances: generateQuestInstances(newState),
+      };
+    }
+    case "ADD_ONEOFF_TASK": {
+      const templateId = generateId();
+      const newTemplate: QuestTemplate = {
+        ...action.template,
+        id: templateId,
+      };
+      const newInstance = {
+        id: generateId(),
+        templateId,
+        dueDate: action.dueDate,
+        status: "available" as const,
+      };
+      return {
+        ...state,
+        questTemplates: [...state.questTemplates, newTemplate],
+        questInstances: [...state.questInstances, newInstance],
       };
     }
     case "UPDATE_QUEST_TEMPLATE": {
