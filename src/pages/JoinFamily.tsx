@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 export default function JoinFamily() {
   const { user, refreshMembership } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(searchParams.get("code")?.toUpperCase() ?? "");
   const [characterName, setCharacterName] = useState("");
   const [loading, setLoading] = useState(false);
 

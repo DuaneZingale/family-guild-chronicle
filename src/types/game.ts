@@ -1,13 +1,20 @@
 // Core game types — Canon v2 with shared skills, quest metadata, kid mode
+// Renamed: Domain → Path (The Seven Paths)
 
-export type DomainName = "Care" | "Curiosity" | "Craft" | "Contribution" | "Connection" | "Wealth" | "Adventure";
+export type PathName = "Care" | "Curiosity" | "Craft" | "Contribution" | "Connection" | "Wealth" | "Adventure";
 
-export type Domain = {
+/** @deprecated Use PathName instead */
+export type DomainName = PathName;
+
+export type Path = {
   id: string;
-  name: DomainName;
+  name: PathName;
   icon: string;
   description: string;
 };
+
+/** @deprecated Use Path instead */
+export type Domain = Path;
 
 export type Character = {
   id: string;
@@ -21,7 +28,7 @@ export type Character = {
 // Skills are shared definitions — XP tracked per character via XPEvents
 export type Skill = {
   id: string;
-  domainId: string;
+  domainId: string; // kept for backward compat, maps to path_id in DB
   name: string;
   description: string;
   isSuggested: boolean;
@@ -102,7 +109,7 @@ export type Reward = {
 };
 
 export type GameState = {
-  domains: Domain[];
+  domains: Path[]; // kept as "domains" key for backward compat
   characters: Character[];
   skills: Skill[];
   xpEvents: XPEvent[];
@@ -112,5 +119,5 @@ export type GameState = {
   campaignSteps: CampaignStep[];
   rewards: Reward[];
   customIntervalAnchor?: string;
-  kidModeCharacterId?: string; // when set, app is in kid mode for this character
+  kidModeCharacterId?: string;
 };

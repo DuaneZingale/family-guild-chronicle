@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGame } from "@/context/GameContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Button } from "@/components/ui/button";
-import { getDomain, getSkill } from "@/lib/gameLogic";
+import { getPath, getSkill } from "@/lib/gameLogic";
 import { SUGGESTED_QUEST_LIBRARY } from "@/data/seed";
 import {
   Select,
@@ -79,13 +79,13 @@ export default function Library() {
           </div>
 
           <div className="min-w-[140px]">
-            <label className="text-sm font-medium mb-1 block">Domain</label>
+            <label className="text-sm font-medium mb-1 block">Path</label>
             <Select value={filterDomain} onValueChange={setFilterDomain}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Domains</SelectItem>
+                <SelectItem value="all">All Paths</SelectItem>
                 {state.domains.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.icon} {d.name}
@@ -124,7 +124,7 @@ export default function Library() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((template) => {
             const skill = state.skills.find((s) => s.id === template.skillId);
-            const domain = skill ? getDomain(state, skill.domainId) : null;
+            const domain = skill ? getPath(state, skill.domainId) : null;
             const imp = importanceConfig[template.importance];
 
             return (

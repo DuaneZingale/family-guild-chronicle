@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { GameProvider } from "@/context/GameContext";
 import GuildHall from "./pages/GuildHall";
 import CharacterProfile from "./pages/CharacterProfile";
-import DomainsSkills from "./pages/DomainsSkills";
+import PathsSkills from "./pages/DomainsSkills";
 import Routines from "./pages/Routines";
 import Campaigns from "./pages/Campaigns";
 import RewardsShop from "./pages/RewardsShop";
@@ -95,15 +95,17 @@ const App = () => (
               }
             />
             <Route
-              path="/domains"
+              path="/paths"
               element={
                 <AuthGate>
                   <GameProvider>
-                    <DomainsSkills />
+                    <PathsSkills />
                   </GameProvider>
                 </AuthGate>
               }
             />
+            {/* Legacy redirect */}
+            <Route path="/domains" element={<Navigate to="/paths" replace />} />
             <Route
               path="/library"
               element={

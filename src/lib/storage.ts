@@ -1,11 +1,11 @@
 import type { GameState } from "@/types/game";
-import { DOMAINS, CHARACTERS, SKILLS, QUEST_TEMPLATES, CAMPAIGNS, CAMPAIGN_STEPS, REWARDS } from "@/data/seed";
+import { PATHS, CHARACTERS, SKILLS, QUEST_TEMPLATES, CAMPAIGNS, CAMPAIGN_STEPS, REWARDS } from "@/data/seed";
 
 const STORAGE_KEY = "family-guild-state";
 
 export function getInitialState(): GameState {
   return {
-    domains: DOMAINS,
+    domains: PATHS,
     characters: CHARACTERS,
     skills: SKILLS,
     xpEvents: [],
@@ -22,9 +22,9 @@ export function loadGameState(): GameState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as GameState;
-      // Always use latest domain + skill definitions from seed
+      // Always use latest path + skill definitions from seed
       return {
-        domains: DOMAINS,
+        domains: PATHS,
         characters: parsed.characters ?? CHARACTERS,
         skills: SKILLS,
         xpEvents: parsed.xpEvents ?? [],

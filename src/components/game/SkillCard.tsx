@@ -1,5 +1,5 @@
 import { useGame } from "@/context/GameContext";
-import { getSkillXP, getSkillLevel, getXPProgress, getDomain } from "@/lib/gameLogic";
+import { getSkillXP, getSkillLevel, getXPProgress, getPath } from "@/lib/gameLogic";
 import type { Skill } from "@/types/game";
 
 interface SkillCardProps {
@@ -12,7 +12,7 @@ export function SkillCard({ skill, characterId }: SkillCardProps) {
   const xp = getSkillXP(state, skill.id, characterId);
   const level = getSkillLevel(xp);
   const progress = getXPProgress(xp, 100);
-  const domain = getDomain(state, skill.domainId);
+  const domain = getPath(state, skill.domainId);
 
   return (
     <div className="parchment-panel p-4">
