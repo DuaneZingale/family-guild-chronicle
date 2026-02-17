@@ -5,10 +5,11 @@ import { CharacterCard } from "@/components/game/CharacterCard";
 import { QuestCard } from "@/components/game/QuestCard";
 import { SkillCard } from "@/components/game/SkillCard";
 import { CharacterEditDialog } from "@/components/game/CharacterEditDialog";
+import { QuickAddRoutine } from "@/components/game/QuickAddRoutine";
 import { GuildBanner } from "@/components/game/GuildBanner";
 import { getTodayQuests, getSkillsByDomain, getDomain } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Plus } from "lucide-react";
 
 export default function CharacterProfile() {
   const { id } = useParams<{ id: string }>();
@@ -72,9 +73,19 @@ export default function CharacterProfile() {
 
         {/* Today's Quests */}
         <section>
-          <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-            <span>📜</span> Today's Quests
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
+              <span>📜</span> Today's Quests
+            </h2>
+            <QuickAddRoutine
+              preSelectedCharacterIds={[character.id]}
+              trigger={
+                <Button size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" /> Add Routine
+                </Button>
+              }
+            />
+          </div>
           {todayQuests.length === 0 ? (
             <div className="parchment-panel p-6 text-center">
               <p className="text-muted-foreground">No quests for today!</p>
@@ -92,9 +103,19 @@ export default function CharacterProfile() {
 
         {/* Routines */}
         <section>
-          <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-            <span>🔄</span> Routines
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
+              <span>🔄</span> Routines
+            </h2>
+            <QuickAddRoutine
+              preSelectedCharacterIds={[character.id]}
+              trigger={
+                <Button size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              }
+            />
+          </div>
           {routines.length === 0 ? (
             <div className="parchment-panel p-6 text-center">
               <p className="text-muted-foreground">No routines set up yet.</p>
