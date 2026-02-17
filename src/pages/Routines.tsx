@@ -4,6 +4,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ export default function Routines() {
 
   const [formData, setFormData] = useState({
     name: "",
-    assignedToId: "",
+    assignedToIds: [] as string[],
     skillId: "",
     xpReward: 10,
     goldReward: 0,
@@ -44,7 +45,7 @@ export default function Routines() {
   const resetForm = () => {
     setFormData({
       name: "",
-      assignedToId: "",
+      assignedToIds: [],
       skillId: "",
       xpReward: 10,
       goldReward: 0,
@@ -61,7 +62,7 @@ export default function Routines() {
     setEditingTemplate(template);
     setFormData({
       name: template.name,
-      assignedToId: template.assignedToId,
+      assignedToIds: [template.assignedToId],
       skillId: template.skillId,
       xpReward: template.xpReward,
       goldReward: template.goldReward,
@@ -75,31 +76,49 @@ export default function Routines() {
   };
 
   const handleSubmit = () => {
-    if (!formData.name || !formData.assignedToId || !formData.skillId) return;
-
-    const templateData: Omit<QuestTemplate, "id"> = {
-      name: formData.name,
-      type: "recurring",
-      assignedToId: formData.assignedToId,
-      skillId: formData.skillId,
-      xpReward: formData.xpReward,
-      goldReward: formData.goldReward,
-      recurrenceType: formData.recurrenceType,
-      timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
-      daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
-      active: true,
-      importance: formData.importance,
-      visibility: "active",
-      autonomyLevel: formData.autonomyLevel,
-    };
+    if (!formData.name || formData.assignedToIds.length === 0 || !formData.skillId) return;
 
     if (editingTemplate) {
+      // When editing, update just the one template
+      const templateData: Omit<QuestTemplate, "id"> = {
+        name: formData.name,
+        type: "recurring",
+        assignedToId: formData.assignedToIds[0],
+        skillId: formData.skillId,
+        xpReward: formData.xpReward,
+        goldReward: formData.goldReward,
+        recurrenceType: formData.recurrenceType,
+        timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
+        daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
+        active: editingTemplate.active,
+        importance: formData.importance,
+        visibility: "active",
+        autonomyLevel: formData.autonomyLevel,
+      };
       dispatch({
         type: "UPDATE_QUEST_TEMPLATE",
-        template: { ...templateData, id: editingTemplate.id, active: editingTemplate.active },
+        template: { ...templateData, id: editingTemplate.id },
       });
     } else {
-      dispatch({ type: "ADD_QUEST_TEMPLATE", template: templateData });
+      // Create one template per selected character
+      for (const charId of formData.assignedToIds) {
+        const templateData: Omit<QuestTemplate, "id"> = {
+          name: formData.name,
+          type: "recurring",
+          assignedToId: charId,
+          skillId: formData.skillId,
+          xpReward: formData.xpReward,
+          goldReward: formData.goldReward,
+          recurrenceType: formData.recurrenceType,
+          timesPerDay: formData.recurrenceType === "daily" ? formData.timesPerDay : undefined,
+          daysOfWeek: formData.recurrenceType === "weekly" ? formData.daysOfWeek : undefined,
+          active: true,
+          importance: formData.importance,
+          visibility: "active",
+          autonomyLevel: formData.autonomyLevel,
+        };
+        dispatch({ type: "ADD_QUEST_TEMPLATE", template: templateData });
+      }
     }
 
     setIsDialogOpen(false);
@@ -162,22 +181,60 @@ export default function Routines() {
             </div>
 
             <div>
-              <Label>Assigned To</Label>
-              <Select
-                value={formData.assignedToId}
-                onValueChange={(v) => setFormData({ ...formData, assignedToId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select character" />
-                </SelectTrigger>
-                <SelectContent>
-                  {state.characters.map((char) => (
-                    <SelectItem key={char.id} value={char.id}>
-                      {char.avatarEmoji} {char.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Assign To</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7 px-2"
+                    onClick={() => setFormData({ ...formData, assignedToIds: state.characters.map((c) => c.id) })}
+                  >
+                    All
+                  </Button>
+                  {state.characters.some((c) => c.isKid) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7 px-2"
+                      onClick={() => setFormData({ ...formData, assignedToIds: state.characters.filter((c) => c.isKid).map((c) => c.id) })}
+                    >
+                      All Kids
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {state.characters.map((char) => {
+                  const isSelected = formData.assignedToIds.includes(char.id);
+                  return (
+                    <label
+                      key={char.id}
+                      className={`flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card hover:border-primary/50"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => {
+                          setFormData({
+                            ...formData,
+                            assignedToIds: isSelected
+                              ? formData.assignedToIds.filter((id) => id !== char.id)
+                              : [...formData.assignedToIds, char.id],
+                          });
+                        }}
+                      />
+                      <span className="text-lg">{char.avatarEmoji}</span>
+                      <span className="text-sm font-medium truncate">{char.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -318,7 +375,11 @@ export default function Routines() {
             )}
 
             <Button onClick={handleSubmit} className="w-full">
-              {editingTemplate ? "Update Routine" : "Create Routine"}
+              {editingTemplate
+                ? "Update Routine"
+                : formData.assignedToIds.length > 1
+                ? `Create for ${formData.assignedToIds.length} members`
+                : "Create Routine"}
             </Button>
           </div>
         </DialogContent>
