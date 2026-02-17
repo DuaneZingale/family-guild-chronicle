@@ -22,6 +22,7 @@ type GameAction =
   | { type: "DELETE_QUEST_TEMPLATE"; templateId: string }
   | { type: "ACTIVATE_SUGGESTED_QUEST"; template: Omit<QuestTemplate, "id">; assignedToId: string }
   | { type: "ADD_CAMPAIGN"; campaign: Omit<Campaign, "id">; steps: Omit<CampaignStep, "id" | "campaignId">[] }
+  | { type: "ADD_CAMPAIGN_STEP"; campaignId: string; step: Omit<CampaignStep, "id" | "campaignId" | "status"> }
   | { type: "ADD_REWARD"; reward: Omit<Reward, "id"> }
   | { type: "ADD_CHARACTER"; character: Omit<Character, "id"> }
   | { type: "UPDATE_CHARACTER"; character: Character }
@@ -130,6 +131,20 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         campaigns: [...state.campaigns, newCampaign],
         campaignSteps: [...state.campaignSteps, ...newSteps],
+      };
+    }
+    case "ADD_CAMPAIGN_STEP": {
+      const existingSteps = state.campaignSteps.filter((s) => s.campaignId === action.campaignId);
+      const allDone = existingSteps.every((s) => s.status === "done");
+      const newStep: CampaignStep = {
+        ...action.step,
+        id: generateId(),
+        campaignId: action.campaignId,
+        status: allDone ? "available" : "locked",
+      };
+      return {
+        ...state,
+        campaignSteps: [...state.campaignSteps, newStep],
       };
     }
     case "ADD_REWARD": {
