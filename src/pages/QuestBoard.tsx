@@ -147,7 +147,7 @@ export default function QuestBoard() {
                   {quests.map((template) => {
                     const skill = state.skills.find((s) => s.id === template.skillId);
                     const imp = importanceConfig[template.importance];
-                    const questType = template.recurrenceType !== "none" ? "Daily Quest" : "Guild Task";
+                    const questType = template.recurrenceType !== "none" ? "Daily Quest" : "Guild Quest";
 
                     return (
                       <div
