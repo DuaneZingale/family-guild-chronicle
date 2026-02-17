@@ -329,6 +329,45 @@ export type Database = {
           },
         ]
       }
+      kid_pins: {
+        Row: {
+          character_id: string
+          created_at: string
+          family_id: string
+          id: string
+          pin_hash: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          family_id: string
+          id?: string
+          pin_hash: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          pin_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kid_pins_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: true
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kid_pins_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           created_at: string
@@ -656,6 +695,14 @@ export type Database = {
       is_family_member: { Args: { p_family_id: string }; Returns: boolean }
       is_family_parent: { Args: { p_family_id: string }; Returns: boolean }
       seed_family_skills: { Args: { p_family_id: string }; Returns: undefined }
+      set_kid_pin: {
+        Args: { p_character_id: string; p_family_id: string; p_pin: string }
+        Returns: undefined
+      }
+      verify_kid_pin: {
+        Args: { p_character_id: string; p_pin: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
