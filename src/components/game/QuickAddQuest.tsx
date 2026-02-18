@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useGame } from "@/context/GameContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useCreateQuest, useUpdateQuest } from "@/hooks/useUnifiedQuests";
 import {
