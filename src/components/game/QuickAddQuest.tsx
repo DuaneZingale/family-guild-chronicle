@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -39,6 +39,7 @@ interface QuickAddQuestProps {
   preSelectedSkillId?: string;
   trigger?: React.ReactNode;
   defaultQuestType?: "training" | "side" | "guild";
+  defaultRitualBlock?: RitualBlock;
   /** Legacy: maps old types */
   editTemplate?: QuestTemplate | null;
   open?: boolean;
@@ -50,6 +51,7 @@ export function QuickAddQuest({
   preSelectedSkillId = "",
   trigger,
   defaultQuestType = "training",
+  defaultRitualBlock,
   editTemplate,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -57,7 +59,7 @@ export function QuickAddQuest({
   const { membership } = useAuth();
   const familyId = membership?.familyId;
 
-  // Fetch characters from Supabase
+  // Fetch characters
   const { data: supabaseCharacters = [] } = useQuery({
     queryKey: ["characters", familyId],
     queryFn: async () => {
@@ -72,18 +74,32 @@ export function QuickAddQuest({
     enabled: !!familyId,
   });
 
-  // Fetch skill definitions from Supabase
+  // Fetch path definitions
+  const { data: pathDefinitions = [] } = useQuery({
+    queryKey: ["path-definitions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("path_definitions")
+        .select("id, name, icon")
+        .order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch skill definitions with path info
   const { data: skillDefinitions = [] } = useQuery({
-    queryKey: ["skill-definitions-with-domains"],
+    queryKey: ["skill-definitions-with-paths"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("skill_definitions")
-        .select("id, name, domain_id, domain_definitions(icon, name)")
+        .select("id, name, path_id, domain_id, domain_definitions(icon, name)")
         .order("name");
       if (error) throw error;
       return data;
     },
   });
+
   const createQuest = useCreateQuest();
   const updateQuest = useUpdateQuest();
 
@@ -97,11 +113,12 @@ export function QuickAddQuest({
   const [questType, setQuestType] = useState<QuestType>(defaultQuestType);
   const [name, setName] = useState("");
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>(preSelectedCharacterIds);
+  const [selectedPathId, setSelectedPathId] = useState("");
   const [skillId, setSkillId] = useState(preSelectedSkillId);
   const [xpReward, setXpReward] = useState(10);
   const [goldReward, setGoldReward] = useState(0);
   const [frequencyType, setFrequencyType] = useState<FrequencyType>("daily");
-  const [ritualBlock, setRitualBlock] = useState<RitualBlock | "">("morning");
+  const [ritualBlock, setRitualBlock] = useState<RitualBlock | "">(defaultRitualBlock ?? "morning");
   const [timesPerDay, setTimesPerDay] = useState(1);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [importance, setImportance] = useState<QuestImportance>("growth");
@@ -116,6 +133,20 @@ export function QuickAddQuest({
 
   const isTraining = questType === "training";
   const isGuild = questType === "guild";
+
+  // Filter skills by selected path
+  const filteredSkills = useMemo(() => {
+    if (!selectedPathId) return [];
+    return skillDefinitions.filter((s) => s.path_id === selectedPathId);
+  }, [selectedPathId, skillDefinitions]);
+
+  // When path changes, clear skill if it doesn't belong to new path
+  useEffect(() => {
+    if (selectedPathId && skillId) {
+      const stillValid = filteredSkills.some((s) => s.id === skillId);
+      if (!stillValid) setSkillId("");
+    }
+  }, [selectedPathId, filteredSkills, skillId]);
 
   useEffect(() => {
     if (editTemplate && open) {
@@ -137,11 +168,12 @@ export function QuickAddQuest({
     setQuestType(defaultQuestType);
     setName("");
     setSelectedCharacterIds(preSelectedCharacterIds);
+    setSelectedPathId("");
     setSkillId(preSelectedSkillId);
     setXpReward(10);
     setGoldReward(0);
     setFrequencyType("daily");
-    setRitualBlock("morning");
+    setRitualBlock(defaultRitualBlock ?? "morning");
     setTimesPerDay(1);
     setDaysOfWeek([1, 2, 3, 4, 5]);
     setImportance("growth");
@@ -229,10 +261,10 @@ export function QuickAddQuest({
       </DialogHeader>
 
       <div className="space-y-4 mt-4">
-        {/* Quest Type Toggle */}
+        {/* Step 1: Quest Type */}
         {!isEditing && (
           <div>
-            <Label>Quest Type</Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Step 1 — Quest Type</Label>
             <div className="flex gap-2 mt-1 flex-wrap">
               {(["training", "side", "guild"] as QuestType[]).map((type) => (
                 <Button
@@ -249,7 +281,7 @@ export function QuickAddQuest({
           </div>
         )}
 
-        {/* Name */}
+        {/* Quest Name */}
         <div>
           <Label htmlFor="qr-name">Quest Name</Label>
           <Input
@@ -304,25 +336,45 @@ export function QuickAddQuest({
           </div>
         )}
 
-        {/* Skill */}
+        {/* Step 2: Select Path */}
         <div>
-          <Label>Skill (optional)</Label>
-          <Select value={skillId} onValueChange={setSkillId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select skill" />
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Step 2 — Path</Label>
+          <Select value={selectedPathId} onValueChange={(v) => setSelectedPathId(v)}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Choose a Path" />
             </SelectTrigger>
             <SelectContent>
-              {skillDefinitions.map((skill) => {
-                const domain = skill.domain_definitions as any;
-                return (
-                  <SelectItem key={skill.id} value={skill.id}>
-                    {domain?.icon} {skill.name}
-                  </SelectItem>
-                );
-              })}
+              {pathDefinitions.map((path) => (
+                <SelectItem key={path.id} value={path.id}>
+                  {path.icon} {path.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
+
+        {/* Step 3: Select Skill (filtered by Path) */}
+        {selectedPathId && (
+          <div>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Step 3 — Skill</Label>
+            {filteredSkills.length === 0 ? (
+              <p className="text-sm text-muted-foreground mt-1">No skills under this path yet.</p>
+            ) : (
+              <Select value={skillId} onValueChange={setSkillId}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Choose a Skill" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSkills.map((skill) => (
+                    <SelectItem key={skill.id} value={skill.id}>
+                      {skill.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
 
         {/* Training: Ritual Block & Frequency */}
         {isTraining && (
@@ -390,41 +442,18 @@ export function QuickAddQuest({
           </>
         )}
 
-        {/* Importance & Autonomy */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Importance</Label>
-            <Select value={importance} onValueChange={(v) => setImportance(v as QuestImportance)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="essential">🔴 Essential</SelectItem>
-                <SelectItem value="growth">🟡 Growth</SelectItem>
-                <SelectItem value="delight">🟢 Delight</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Autonomy</Label>
-            <Select value={autonomyLevel} onValueChange={(v) => setAutonomyLevel(v as QuestAutonomy)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="self_start">Self Start</SelectItem>
-                <SelectItem value="prompt_ok">Prompt OK</SelectItem>
-                <SelectItem value="parent_led">Parent Led</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* XP & Gold */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>XP Reward</Label>
-            <Input type="number" min={0} value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} />
-          </div>
-          <div>
-            <Label>Gold Reward</Label>
-            <Input type="number" min={0} value={goldReward} onChange={(e) => setGoldReward(Number(e.target.value))} />
+        {/* Step 4: XP & Gold */}
+        <div>
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Step 4 — Rewards</Label>
+          <div className="grid grid-cols-2 gap-4 mt-1">
+            <div>
+              <Label>XP Reward</Label>
+              <Input type="number" min={0} value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} />
+            </div>
+            <div>
+              <Label>Gold Reward</Label>
+              <Input type="number" min={0} value={goldReward} onChange={(e) => setGoldReward(Number(e.target.value))} />
+            </div>
           </div>
         </div>
 
@@ -437,6 +466,30 @@ export function QuickAddQuest({
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Importance</Label>
+                <Select value={importance} onValueChange={(v) => setImportance(v as QuestImportance)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="essential">🔴 Essential</SelectItem>
+                    <SelectItem value="growth">🟡 Growth</SelectItem>
+                    <SelectItem value="delight">🟢 Delight</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Autonomy</Label>
+                <Select value={autonomyLevel} onValueChange={(v) => setAutonomyLevel(v as QuestAutonomy)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self_start">Self Start</SelectItem>
+                    <SelectItem value="prompt_ok">Prompt OK</SelectItem>
+                    <SelectItem value="parent_led">Parent Led</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Window Start</Label>

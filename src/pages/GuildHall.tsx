@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { GuildBanner } from "@/components/game/GuildBanner";
+import { HallOfFame } from "@/components/game/HallOfFame";
 import { RitualReadiness } from "@/components/game/RitualReadiness";
 import { AddKidDialog } from "@/components/game/AddKidDialog";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,8 @@ export default function GuildHall() {
         {/* Ritual Readiness — glanceable status board */}
         <RitualReadiness />
 
+        {/* Hall of Fame */}
+        <HallOfFame />
         {/* Active Guild Quests */}
         {guildQuests.length > 0 && (
           <section>

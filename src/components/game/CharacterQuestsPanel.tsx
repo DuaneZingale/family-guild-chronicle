@@ -179,18 +179,6 @@ export function CharacterQuestsPanel({ characterId }: CharacterQuestsPanelProps)
   const quests = allQuests ?? [];
   const logs = todayLogs ?? [];
 
-  // Training quests for this character, grouped by ritual block
-  const trainingQuests = filterQuests(quests, {
-    type: "training",
-    characterId,
-    activeOnly: true,
-  });
-
-  const morningQuests = trainingQuests.filter((q) => q.ritual_block === "morning");
-  const afternoonQuests = trainingQuests.filter((q) => q.ritual_block === "afternoon");
-  const eveningQuests = trainingQuests.filter((q) => q.ritual_block === "evening");
-  const unassignedTraining = trainingQuests.filter((q) => !q.ritual_block);
-
   // Side quests
   const sideQuests = filterQuests(quests, {
     type: "side",
@@ -215,54 +203,25 @@ export function CharacterQuestsPanel({ characterId }: CharacterQuestsPanelProps)
     completeQuest.mutate(
       { quest, characterId: resolvedCharId },
       {
-        onSuccess: () => {
-          toast.success(`Quest complete! +${quest.xp_reward} XP`);
-        },
-        onError: (err) => {
-          toast.error("Failed to complete quest");
-          console.error(err);
-        },
+        onSuccess: () => toast.success(`Quest complete! +${quest.xp_reward} XP`),
+        onError: () => toast.error("Failed to complete quest"),
       }
     );
   };
 
-  const hasAny = trainingQuests.length > 0 || sideQuests.length > 0 || guildQuests.length > 0 || campaignSteps.length > 0;
+  const hasAny = sideQuests.length > 0 || guildQuests.length > 0 || campaignSteps.length > 0;
 
   if (!hasAny) {
     return (
       <div className="parchment-panel p-6 text-center">
         <span className="text-4xl block mb-2">📜</span>
-        <p className="text-muted-foreground">No active quests. Visit the Quest Board to find adventures!</p>
+        <p className="text-muted-foreground">No open quests right now.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      {/* Ritual Blocks */}
-      <RitualSection block="morning" quests={morningQuests} logs={logs} onComplete={handleComplete} />
-      <RitualSection block="afternoon" quests={afternoonQuests} logs={logs} onComplete={handleComplete} />
-      <RitualSection block="evening" quests={eveningQuests} logs={logs} onComplete={handleComplete} />
-
-      {/* Unassigned training quests (no ritual block) */}
-      {unassignedTraining.length > 0 && (
-        <section className="mb-6">
-          <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-            <span>🏋️</span> Training Quests
-          </h2>
-          <div className="space-y-2">
-            {unassignedTraining.map((quest) => (
-              <TrainingQuestCard
-                key={quest.id}
-                quest={quest}
-                isDone={isCompletedToday(quest, logs)}
-                onComplete={() => handleComplete(quest)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Side Quests */}
       {sideQuests.length > 0 && (
         <section className="mb-6">
