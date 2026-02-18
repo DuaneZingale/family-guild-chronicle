@@ -100,7 +100,7 @@ export function RitualReadiness() {
   return (
     <section>
       <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-        <span>🛡️</span> Ritual Readiness
+        <span>🛡️</span> Today's Readiness
       </h2>
       <div className="parchment-panel overflow-hidden">
         <div className="divide-y divide-border">
@@ -113,8 +113,8 @@ export function RitualReadiness() {
                 {(["morning", "afternoon", "evening"] as RitualBlock[]).map((block) => {
                   const { total, done } = member.blocks[block];
                   if (total === 0) return null;
-                  const status = done === total ? "complete" : done > 0 ? "partial" : "missed";
-                  const statusIcon = status === "complete" ? "✅" : status === "partial" ? "🌓" : "❌";
+                  const status = done === total ? "complete" : done > 0 ? "partial" : "ready";
+                  const statusIcon = status === "complete" ? "✅" : status === "partial" ? "🌓" : "⏳";
                   return (
                     <span
                       key={block}

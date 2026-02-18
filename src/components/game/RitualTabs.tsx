@@ -37,8 +37,8 @@ export function RitualTabs({ characterId, isParent }: RitualTabsProps) {
     completeQuest.mutate(
       { quest, characterId },
       {
-        onSuccess: () => toast.success(`Quest complete! +${quest.xp_reward} XP`),
-        onError: () => toast.error("Failed to complete quest"),
+        onSuccess: () => toast.success(`+${quest.xp_reward} XP gained! 🎉`),
+        onError: () => toast.error("Something went wrong — try again"),
       }
     );
   };
@@ -128,7 +128,7 @@ export function RitualTabs({ characterId, isParent }: RitualTabsProps) {
             {blockQuests.length === 0 ? (
               <div className="parchment-panel p-6 text-center">
                 <span className="text-3xl block mb-2">{RITUAL_BLOCK_CONFIG[block].icon}</span>
-                <p className="text-muted-foreground text-sm">No quests in this ritual yet.</p>
+                <p className="text-muted-foreground text-sm">Ready to design this ritual.</p>
                 {isParent && (
                   <QuickAddQuest
                     preSelectedCharacterIds={[characterId]}

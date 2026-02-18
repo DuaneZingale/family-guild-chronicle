@@ -116,17 +116,17 @@ export function HallOfFame() {
                   <div className="font-fantasy text-primary text-lg">{s.level}</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground text-xs">XP</div>
-                  <div className="font-semibold text-xp">{s.totalXp.toLocaleString()}</div>
+                  <div className="text-muted-foreground text-xs">XP Gained</div>
+                  <div className="font-semibold text-xp">+{s.totalXp.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground text-xs">Gold</div>
+                  <div className="text-muted-foreground text-xs">Gold Earned</div>
                   <div className="font-semibold gold-text flex items-center justify-center gap-1">
                     💰 {s.totalGold}
                   </div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground text-xs">Streak</div>
+                  <div className="text-muted-foreground text-xs">Best Streak</div>
                   <div className="flex items-center justify-center gap-1">
                     {s.currentStreak > 0 ? (
                       <>
@@ -134,7 +134,7 @@ export function HallOfFame() {
                         <span className="font-semibold">{s.currentStreak}</span>
                       </>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">Ready to start</span>
                     )}
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export function HallOfFame() {
       {/* This Week's Momentum */}
       <section>
         <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-          <Zap className="h-5 w-5 text-primary" /> This Week's Momentum
+          <Zap className="h-5 w-5 text-primary" /> This Week You Gained
         </h2>
         <div className="parchment-panel overflow-hidden">
           <div className="divide-y divide-border">
@@ -156,17 +156,17 @@ export function HallOfFame() {
                 <span className="text-2xl">{s.avatarEmoji}</span>
                 <span className="font-semibold text-sm min-w-[5rem] truncate">{s.name}</span>
                 <div className="flex items-center gap-4 flex-1 justify-end text-sm">
-                  <span className="flex items-center gap-1" title="XP this week">
+                  <span className="flex items-center gap-1" title="XP gained this week">
                     <Star className="h-3.5 w-3.5 text-primary" />
                     <span className="font-semibold text-xp">+{s.weeklyXp}</span>
                   </span>
                   <span title="Quests completed this week">
-                    <span className="font-semibold">{s.weeklyQuestsCompleted}</span>
+                    <span className="font-semibold">+{s.weeklyQuestsCompleted}</span>
                     <span className="text-muted-foreground ml-1">quests</span>
                   </span>
                   {s.currentStreak > 0 && (
                     <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 bg-accent text-accent-foreground rounded">
-                      <Flame className="h-3 w-3" /> {s.currentStreak}
+                      <Flame className="h-3 w-3" /> {s.currentStreak} streak
                     </span>
                   )}
                 </div>
