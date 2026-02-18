@@ -1,40 +1,87 @@
 import { useNavigate } from "react-router-dom";
-import { useGame } from "@/context/GameContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { GuildBanner } from "@/components/game/GuildBanner";
-import { CharacterCard } from "@/components/game/CharacterCard";
-import { Leaderboard } from "@/components/game/Leaderboard";
+import { RitualReadiness } from "@/components/game/RitualReadiness";
 import { AddKidDialog } from "@/components/game/AddKidDialog";
-import { QuestCard } from "@/components/game/QuestCard";
-import { XPEventCard } from "@/components/game/XPEventCard";
-import { getTodayQuests, getRecentEvents, getCharacter } from "@/lib/gameLogic";
 import { Button } from "@/components/ui/button";
-import { Plus, UserPlus, Settings } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 
 export default function GuildHall() {
-  const { state } = useGame();
   const { membership } = useAuth();
+  const familyId = membership?.familyId;
   const navigate = useNavigate();
   const isParent = membership?.role === "parent" || membership?.role === "co-parent";
 
-  const todayQuests = getTodayQuests(state);
-  const recentEvents = getRecentEvents(state, 5);
+  // Fetch characters from Supabase
+  const { data: characters = [] } = useQuery({
+    queryKey: ["characters", familyId],
+    queryFn: async () => {
+      if (!familyId) return [];
+      const { data, error } = await supabase
+        .from("characters")
+        .select("*")
+        .eq("family_id", familyId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!familyId,
+  });
 
-  // Group today's quests by character
-  const questsByCharacter: Record<string, typeof todayQuests> = {};
-  for (const quest of todayQuests) {
-    const template = state.questTemplates.find((t) => t.id === quest.templateId);
-    if (template) {
-      const charId = template.assignedToId;
-      if (!questsByCharacter[charId]) {
-        questsByCharacter[charId] = [];
+  // Fetch XP totals per character
+  const { data: xpMap = {} } = useQuery({
+    queryKey: ["guild-xp-map", familyId],
+    queryFn: async () => {
+      if (!familyId) return {};
+      const { data, error } = await supabase
+        .from("xp_events")
+        .select("character_id, xp")
+        .eq("family_id", familyId);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const e of data ?? []) {
+        map[e.character_id] = (map[e.character_id] ?? 0) + e.xp;
       }
-      questsByCharacter[charId].push(quest);
-    }
-  }
+      return map;
+    },
+    enabled: !!familyId,
+  });
 
-  const members = state.characters.filter((c) => c.id !== "guild");
+  // Active guild quests
+  const { data: guildQuests = [] } = useQuery({
+    queryKey: ["guild-quests", familyId],
+    queryFn: async () => {
+      if (!familyId) return [];
+      const { data, error } = await supabase
+        .from("unified_quests")
+        .select("id, name, xp_reward, gold_reward, status")
+        .eq("family_id", familyId)
+        .eq("quest_type", "guild")
+        .eq("active", true)
+        .neq("status", "done");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!familyId,
+  });
+
+  // Active campaigns
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["active-campaigns", familyId],
+    queryFn: async () => {
+      if (!familyId) return [];
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id, name, status")
+        .eq("family_id", familyId)
+        .eq("status", "active");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!familyId,
+  });
 
   return (
     <PageWrapper title="Guild Hall" subtitle="Welcome home, adventurers">
@@ -43,7 +90,7 @@ export default function GuildHall() {
         <GuildBanner />
 
         {/* Member Tiles */}
-        <div>
+        <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
               <span>👥</span> Guild Members
@@ -68,95 +115,81 @@ export default function GuildHall() {
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {members.map((char) => (
-              <CharacterCard
-                key={char.id}
-                character={char}
-                variant="tile"
-                onClick={() => navigate(`/character/${char.id}`)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Leaderboard */}
-        <Leaderboard />
-
-        {/* Today's Quests */}
-        <div>
-          <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
-            <span>📜</span> Today's Quests
-          </h2>
-
-          {Object.keys(questsByCharacter).length === 0 ? (
-            <div className="parchment-panel p-8 text-center">
-              <span className="text-4xl block mb-2">🎉</span>
-              <p className="text-lg text-muted-foreground">No quests for today!</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Head to the Quest Log to add daily quests.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(questsByCharacter).map(([charId, quests]) => {
-                const character = getCharacter(state, charId);
-                if (!character) return null;
-
-                const sortedQuests = [...quests].sort((a, b) => {
-                  if (a.status === "available" && b.status !== "available") return -1;
-                  if (a.status !== "available" && b.status === "available") return 1;
-                  return 0;
-                });
-
-                return (
-                  <div key={charId}>
-                    <div
-                      className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => navigate(`/character/${charId}`)}
-                    >
-                      <span className="text-2xl">{character.avatarEmoji}</span>
-                      <h3 className="font-fantasy text-lg">{character.name}</h3>
-                      <span className="text-sm text-muted-foreground">
-                        ({quests.filter((q) => q.status === "done").length}/{quests.length} done)
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {sortedQuests.map((quest) => {
-                        const template = state.questTemplates.find(
-                          (t) => t.id === quest.templateId
-                        );
-                        if (!template) return null;
-                        return (
-                          <QuestCard key={quest.id} instance={quest} template={template} />
-                        );
-                      })}
-                    </div>
+            {characters.map((char) => {
+              const xp = xpMap[char.id] ?? 0;
+              const level = Math.floor(xp / 200) + 1;
+              const progress = ((xp % 200) / 200) * 100;
+              return (
+                <div
+                  key={char.id}
+                  className="parchment-panel p-4 flex flex-col items-center gap-2 text-center cursor-pointer hover:scale-[1.03] transition-transform"
+                  onClick={() => navigate(`/character/${char.id}`)}
+                >
+                  <span className="text-4xl">{char.avatar_emoji}</span>
+                  <div className="font-fantasy text-base truncate w-full">{char.name}</div>
+                  <span className="text-xs px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full">
+                    Lvl {level}
+                  </span>
+                  <div className="xp-bar w-full mt-1">
+                    <div className="xp-bar-fill" style={{ width: `${progress}%` }} />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  <div className="flex items-center gap-1 text-sm">
+                    <span>💰</span>
+                    <span className="gold-text font-semibold">{char.gold}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
-        {/* Recent Activity */}
-        <div>
-          <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-4">
-            <span>📖</span> Recent Activity
-          </h2>
+        {/* Ritual Readiness — glanceable status board */}
+        <RitualReadiness />
 
-          {recentEvents.length === 0 ? (
-            <div className="parchment-panel p-6 text-center">
-              <p className="text-muted-foreground">No activity yet. Complete some quests!</p>
-            </div>
-          ) : (
+        {/* Active Guild Quests */}
+        {guildQuests.length > 0 && (
+          <section>
+            <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
+              <span>⚔️</span> Active Guild Quests
+            </h2>
             <div className="space-y-2">
-              {recentEvents.map((event) => (
-                <XPEventCard key={event.id} event={event} />
+              {guildQuests.map((q) => (
+                <div key={q.id} className="quest-card flex items-center gap-3">
+                  <span className="text-lg">⚔️</span>
+                  <span className="font-semibold flex-1">{q.name}</span>
+                  <span className="text-sm text-primary font-semibold">+{q.xp_reward} XP</span>
+                  {q.gold_reward > 0 && (
+                    <span className="text-sm font-semibold">💰 {q.gold_reward}</span>
+                  )}
+                </div>
               ))}
             </div>
-          )}
-        </div>
+          </section>
+        )}
+
+        {/* Active Campaigns */}
+        {campaigns.length > 0 && (
+          <section>
+            <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2 mb-3">
+              <span>🗺️</span> Active Campaigns
+            </h2>
+            <div className="space-y-2">
+              {campaigns.map((c) => (
+                <div
+                  key={c.id}
+                  className="quest-card flex items-center gap-3 cursor-pointer hover:border-primary/40"
+                  onClick={() => navigate("/campaigns")}
+                >
+                  <span className="text-lg">🗺️</span>
+                  <span className="font-semibold flex-1">{c.name}</span>
+                  <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded">
+                    In Progress
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </PageWrapper>
   );

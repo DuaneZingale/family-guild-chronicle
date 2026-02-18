@@ -78,7 +78,7 @@ export const SKILLS: Skill[] = [
 
 // Active quest templates (from old seed, mapped to new skills)
 export const QUEST_TEMPLATES: QuestTemplate[] = [
-  // Chloe's routines
+  // Chloe's training quests
   {
     id: "chloe-teeth",
     name: "Brush Teeth",
@@ -127,7 +127,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     autonomyLevel: "prompt_ok",
   },
 
-  // Ariasha's routines
+  // Ariasha's training quests
   {
     id: "ariasha-teeth",
     name: "Brush Teeth",
