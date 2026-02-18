@@ -203,8 +203,8 @@ export function CharacterQuestsPanel({ characterId }: CharacterQuestsPanelProps)
     completeQuest.mutate(
       { quest, characterId: resolvedCharId },
       {
-        onSuccess: () => toast.success(`Quest complete! +${quest.xp_reward} XP`),
-        onError: () => toast.error("Failed to complete quest"),
+        onSuccess: () => toast.success(`+${quest.xp_reward} XP gained! 🎉`),
+        onError: () => toast.error("Something went wrong — try again"),
       }
     );
   };
@@ -215,7 +215,7 @@ export function CharacterQuestsPanel({ characterId }: CharacterQuestsPanelProps)
     return (
       <div className="parchment-panel p-6 text-center">
         <span className="text-4xl block mb-2">📜</span>
-        <p className="text-muted-foreground">No open quests right now.</p>
+        <p className="text-muted-foreground">All clear — ready for a new adventure?</p>
       </div>
     );
   }
