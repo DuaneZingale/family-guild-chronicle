@@ -1,115 +1,128 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGame } from "@/context/GameContext";
+import { useUnifiedQuests, useTodayQuestLogs, useCompleteQuest, filterQuests, isCompletedToday } from "@/hooks/useUnifiedQuests";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { AddCampaignDialog } from "@/components/game/AddCampaignDialog";
-import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
-import { Plus, Trash2, Edit } from "lucide-react";
-import type { QuestTemplate, QuestImportance } from "@/types/game";
-import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Edit, Flame } from "lucide-react";
+import { RITUAL_BLOCK_CONFIG, QUEST_TYPE_CONFIG } from "@/types/unified-quests";
+import type { UnifiedQuest, QuestType } from "@/types/unified-quests";
+import { toast } from "sonner";
 
 export default function QuestLog() {
-  const { state, dispatch } = useGame();
+  const { state } = useGame();
   const navigate = useNavigate();
-  const [editingTemplate, setEditingTemplate] = useState<QuestTemplate | null>(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const { data: allQuests, isLoading } = useUnifiedQuests();
+  const { data: todayLogs } = useTodayQuestLogs();
 
-  const openEditDialog = (template: QuestTemplate) => {
-    setEditingTemplate(template);
-    setIsEditOpen(true);
-  };
+  const quests = allQuests ?? [];
+  const logs = todayLogs ?? [];
 
-  const handleEditOpenChange = (open: boolean) => {
-    setIsEditOpen(open);
-    if (!open) setEditingTemplate(null);
-  };
-
-  const handleDelete = (templateId: string) => {
-    dispatch({ type: "DELETE_QUEST_TEMPLATE", templateId });
-  };
-
-  const handleToggleActive = (template: QuestTemplate) => {
-    dispatch({
-      type: "UPDATE_QUEST_TEMPLATE",
-      template: { ...template, active: !template.active },
-    });
-  };
-
-  const importanceIcon: Record<QuestImportance, string> = {
-    essential: "🔴",
-    growth: "🟡",
-    delight: "🟢",
-  };
-
-  const activeTemplates = state.questTemplates.filter((t) => t.visibility === "active");
-  const dailyQuests = activeTemplates.filter((t) => t.type === "recurring");
-  const guildQuests = activeTemplates.filter((t) => t.type === "oneoff");
-
-  const getQuestStatus = (templateId: string) => {
-    const instances = state.questInstances.filter((qi) => qi.templateId === templateId);
-    return instances.some((qi) => qi.status === "done") ? "done" : "available";
-  };
+  const trainingQuests = filterQuests(quests, { type: "training", activeOnly: true });
+  const sideQuests = filterQuests(quests, { type: "side", activeOnly: true });
+  const guildQuests = filterQuests(quests, { type: "guild", activeOnly: true });
 
   const activeCampaigns = state.campaigns.filter((c) => c.status === "active");
 
   return (
-    <PageWrapper title="Quest Log" subtitle="All your quests, daily routines, and adventures">
-      {/* Edit Dialog */}
-      <QuickAddQuest
-        editTemplate={editingTemplate}
-        open={isEditOpen}
-        onOpenChange={handleEditOpenChange}
-      />
-
-      <Tabs defaultValue="daily" className="w-full">
+    <PageWrapper title="Quest Log" subtitle="All your quests and adventures">
+      <Tabs defaultValue="training" className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-6">
-          <TabsTrigger value="daily">🔄 Daily Quests</TabsTrigger>
-          <TabsTrigger value="guild-quests">⚔️ Guild Quests</TabsTrigger>
+          <TabsTrigger value="training">🏋️ Training</TabsTrigger>
+          <TabsTrigger value="side">📌 Side</TabsTrigger>
+          <TabsTrigger value="guild">⚔️ Guild</TabsTrigger>
           <TabsTrigger value="campaigns">🗺️ Campaigns</TabsTrigger>
-          <TabsTrigger value="journeys">🧭 Journeys</TabsTrigger>
         </TabsList>
 
-        {/* Daily Quests Tab */}
-        <TabsContent value="daily">
+        {/* Training Quests Tab */}
+        <TabsContent value="training">
           <div className="flex gap-2 mb-4">
-            <QuickAddQuest defaultQuestType="routine" trigger={
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Daily Quest</Button>
+            <QuickAddQuest defaultQuestType="training" trigger={
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Training Quest</Button>
             } />
           </div>
 
-          {dailyQuests.length === 0 ? (
+          {isLoading ? (
             <div className="parchment-panel p-8 text-center">
-              <span className="text-4xl block mb-2">🔄</span>
-              <p className="text-lg text-muted-foreground">No daily quests yet.</p>
+              <span className="text-2xl animate-pulse">⏳</span>
+            </div>
+          ) : trainingQuests.length === 0 ? (
+            <div className="parchment-panel p-8 text-center">
+              <span className="text-4xl block mb-2">🏋️</span>
+              <p className="text-lg text-muted-foreground">No training quests yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Create recurring quests like brushing teeth, reading, or exercise!
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {dailyQuests.map((template) => (
-                <QuestTemplateRow
-                  key={template.id}
-                  template={template}
-                  state={state}
-                  importanceIcon={importanceIcon}
-                  onEdit={() => openEditDialog(template)}
-                  onDelete={() => handleDelete(template.id)}
-                  onToggleActive={() => handleToggleActive(template)}
-                  showRecurrence
-                />
+            <div className="space-y-6">
+              {(["morning", "afternoon", "evening"] as const).map((block) => {
+                const blockQuests = trainingQuests.filter((q) => q.ritual_block === block);
+                if (blockQuests.length === 0) return null;
+                const config = RITUAL_BLOCK_CONFIG[block];
+                return (
+                  <section key={block}>
+                    <h3 className="font-fantasy text-lg text-foreground flex items-center gap-2 mb-2">
+                      <span>{config.icon}</span> {config.label}
+                    </h3>
+                    <div className="space-y-2">
+                      {blockQuests.map((quest) => (
+                        <QuestRow key={quest.id} quest={quest} logs={logs} />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+              {/* Unassigned block */}
+              {trainingQuests.filter((q) => !q.ritual_block).length > 0 && (
+                <section>
+                  <h3 className="font-fantasy text-lg text-foreground flex items-center gap-2 mb-2">
+                    <span>📋</span> Unscheduled
+                  </h3>
+                  <div className="space-y-2">
+                    {trainingQuests.filter((q) => !q.ritual_block).map((quest) => (
+                      <QuestRow key={quest.id} quest={quest} logs={logs} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Side Quests Tab */}
+        <TabsContent value="side">
+          <div className="flex gap-2 mb-4">
+            <QuickAddQuest defaultQuestType="side" trigger={
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Side Quest</Button>
+            } />
+          </div>
+
+          {sideQuests.length === 0 ? (
+            <div className="parchment-panel p-8 text-center">
+              <span className="text-4xl block mb-2">📌</span>
+              <p className="text-lg text-muted-foreground">No side quests yet.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                One-time personal quests for individual heroes.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sideQuests.map((quest) => (
+                <QuestRow key={quest.id} quest={quest} logs={logs} />
               ))}
             </div>
           )}
         </TabsContent>
 
         {/* Guild Quests Tab */}
-        <TabsContent value="guild-quests">
+        <TabsContent value="guild">
           <div className="flex gap-2 mb-4">
-            <QuickAddQuest defaultQuestType="task" trigger={
+            <QuickAddQuest defaultQuestType="guild" trigger={
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Guild Quest</Button>
             } />
           </div>
@@ -119,26 +132,14 @@ export default function QuestLog() {
               <span className="text-4xl block mb-2">⚔️</span>
               <p className="text-lg text-muted-foreground">No guild quests yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Add one-time quests like "Clean the garage" or "Fix the fence."
+                Shared family quests anyone can complete.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {guildQuests.map((template) => {
-                const questStatus = getQuestStatus(template.id);
-                return (
-                  <QuestTemplateRow
-                    key={template.id}
-                    template={template}
-                    state={state}
-                    importanceIcon={importanceIcon}
-                    onEdit={() => openEditDialog(template)}
-                    onDelete={() => handleDelete(template.id)}
-                    isDone={questStatus === "done"}
-                    badge={questStatus === "done" ? "✅ Complete" : "One-time"}
-                  />
-                );
-              })}
+            <div className="space-y-2">
+              {guildQuests.map((quest) => (
+                <QuestRow key={quest.id} quest={quest} logs={logs} />
+              ))}
             </div>
           )}
         </TabsContent>
@@ -153,9 +154,7 @@ export default function QuestLog() {
             <div className="parchment-panel p-8 text-center">
               <span className="text-4xl block mb-2">🗺️</span>
               <p className="text-lg text-muted-foreground">No active campaigns.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Start an epic multi-step adventure!
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Start an epic multi-step adventure!</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -187,97 +186,55 @@ export default function QuestLog() {
             </div>
           )}
         </TabsContent>
-
-        {/* Journeys Tab */}
-        <TabsContent value="journeys">
-          <div className="parchment-panel p-6 text-center">
-            <span className="text-4xl block mb-2">🧭</span>
-            <p className="text-muted-foreground">
-              Manage your long-term growth arcs on the dedicated Journeys page.
-            </p>
-            <Button className="mt-3" onClick={() => navigate("/journeys")}>
-              Open Journeys
-            </Button>
-          </div>
-        </TabsContent>
       </Tabs>
     </PageWrapper>
   );
 }
 
-/* ── Reusable Quest Template Row ── */
-function QuestTemplateRow({
-  template,
-  state,
-  importanceIcon,
-  onEdit,
-  onDelete,
-  onToggleActive,
-  showRecurrence,
-  isDone,
-  badge,
-}: {
-  template: QuestTemplate;
-  state: any;
-  importanceIcon: Record<QuestImportance, string>;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleActive?: () => void;
-  showRecurrence?: boolean;
-  isDone?: boolean;
-  badge?: string;
-}) {
-  const character = getCharacter(state, template.assignedToId);
-  const skill = getSkill(state, template.skillId);
-  const domain = skill ? getDomain(state, skill.domainId) : null;
+/* ── Quest Row Component ── */
+function QuestRow({ quest, logs }: { quest: UnifiedQuest; logs: any[] }) {
+  const done = isCompletedToday(quest, logs);
+  const config = QUEST_TYPE_CONFIG[quest.quest_type];
+  const importanceIcon: Record<string, string> = {
+    essential: "🔴",
+    growth: "🟡",
+    delight: "🟢",
+  };
 
   return (
-    <div className={`parchment-panel p-4 ${isDone || !template.active ? "opacity-50" : ""}`}>
+    <div className={`parchment-panel p-4 ${done ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm">{importanceIcon[template.importance]}</span>
-            <span className="font-fantasy text-lg">{template.name}</span>
-            {badge && (
-              <span className="text-xs px-2 py-0.5 bg-muted rounded">{badge}</span>
-            )}
-            {showRecurrence && (
-              <span className="text-xs px-2 py-0.5 bg-muted rounded capitalize">
-                {template.recurrenceType}
-                {template.timesPerDay && template.timesPerDay > 1
-                  ? ` (${template.timesPerDay}x)`
-                  : ""}
+            <span className="text-sm">{importanceIcon[quest.importance] ?? "🟡"}</span>
+            <span className="font-fantasy text-lg">{quest.name}</span>
+            {quest.streak_count > 0 && (
+              <span className="text-xs px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded flex items-center gap-1">
+                <Flame className="h-3 w-3" /> {quest.streak_count}
               </span>
             )}
+            {quest.ritual_block && (
+              <span className="text-xs px-2 py-0.5 bg-muted rounded">
+                {RITUAL_BLOCK_CONFIG[quest.ritual_block as keyof typeof RITUAL_BLOCK_CONFIG]?.icon} {quest.ritual_block}
+              </span>
+            )}
+            {done && <span className="text-xs px-2 py-0.5 bg-muted rounded">✅ Done</span>}
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>{character?.avatarEmoji} {character?.name}</span>
-            <span>•</span>
-            <span>{domain?.icon} {skill?.name}</span>
-            <span>•</span>
-            <span className="text-xp">+{template.xpReward} XP</span>
-            {template.goldReward > 0 && (
+            <span className="text-xp">+{quest.xp_reward} XP</span>
+            {quest.gold_reward > 0 && (
               <>
                 <span>•</span>
-                <span className="text-gold">+{template.goldReward} 💰</span>
+                <span className="text-gold">+{quest.gold_reward} 💰</span>
+              </>
+            )}
+            {quest.frequency_type && (
+              <>
+                <span>•</span>
+                <span className="capitalize">{quest.frequency_type}</span>
               </>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {onToggleActive && (
-            <Switch
-              checked={template.active}
-              onCheckedChange={onToggleActive}
-            />
-          )}
-          <Button size="icon" variant="ghost" onClick={onEdit}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={onDelete}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
         </div>
       </div>
     </div>

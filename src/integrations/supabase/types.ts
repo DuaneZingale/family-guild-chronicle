@@ -562,6 +562,73 @@ export type Database = {
           },
         ]
       }
+      quest_logs: {
+        Row: {
+          character_id: string
+          completed_at: string
+          due_date: string
+          family_id: string
+          gold_earned: number
+          id: string
+          note: string
+          quest_id: string
+          ritual_block: string | null
+          slot: number
+          streak_at_completion: number
+          xp_earned: number
+        }
+        Insert: {
+          character_id: string
+          completed_at?: string
+          due_date?: string
+          family_id: string
+          gold_earned?: number
+          id?: string
+          note?: string
+          quest_id: string
+          ritual_block?: string | null
+          slot?: number
+          streak_at_completion?: number
+          xp_earned?: number
+        }
+        Update: {
+          character_id?: string
+          completed_at?: string
+          due_date?: string
+          family_id?: string
+          gold_earned?: number
+          id?: string
+          note?: string
+          quest_id?: string
+          ritual_block?: string | null
+          slot?: number
+          streak_at_completion?: number
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_logs_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_logs_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_logs_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "unified_quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quest_templates: {
         Row: {
           active: boolean
@@ -691,6 +758,128 @@ export type Database = {
             columns: ["path_id"]
             isOneToOne: false
             referencedRelation: "path_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unified_quests: {
+        Row: {
+          active: boolean
+          assigned_to_character_id: string | null
+          autonomy: string
+          campaign_id: string | null
+          character_skill_id: string | null
+          created_at: string
+          days_of_week: number[]
+          description: string
+          due_end: string | null
+          due_start: string | null
+          family_id: string
+          frequency_type: string | null
+          gold_reward: number
+          id: string
+          importance: string
+          interval_days: number | null
+          is_suggested: boolean
+          last_completed_at: string | null
+          name: string
+          notify_if_incomplete: boolean
+          quest_type: string
+          ritual_block: string | null
+          source_template_id: string | null
+          status: string
+          step_order: number | null
+          streak_count: number
+          times_per_day: number
+          xp_reward: number
+        }
+        Insert: {
+          active?: boolean
+          assigned_to_character_id?: string | null
+          autonomy?: string
+          campaign_id?: string | null
+          character_skill_id?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          description?: string
+          due_end?: string | null
+          due_start?: string | null
+          family_id: string
+          frequency_type?: string | null
+          gold_reward?: number
+          id?: string
+          importance?: string
+          interval_days?: number | null
+          is_suggested?: boolean
+          last_completed_at?: string | null
+          name: string
+          notify_if_incomplete?: boolean
+          quest_type?: string
+          ritual_block?: string | null
+          source_template_id?: string | null
+          status?: string
+          step_order?: number | null
+          streak_count?: number
+          times_per_day?: number
+          xp_reward?: number
+        }
+        Update: {
+          active?: boolean
+          assigned_to_character_id?: string | null
+          autonomy?: string
+          campaign_id?: string | null
+          character_skill_id?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          description?: string
+          due_end?: string | null
+          due_start?: string | null
+          family_id?: string
+          frequency_type?: string | null
+          gold_reward?: number
+          id?: string
+          importance?: string
+          interval_days?: number | null
+          is_suggested?: boolean
+          last_completed_at?: string | null
+          name?: string
+          notify_if_incomplete?: boolean
+          quest_type?: string
+          ritual_block?: string | null
+          source_template_id?: string | null
+          status?: string
+          step_order?: number | null
+          streak_count?: number
+          times_per_day?: number
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_quests_assigned_to_character_id_fkey"
+            columns: ["assigned_to_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_quests_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_quests_character_skill_id_fkey"
+            columns: ["character_skill_id"]
+            isOneToOne: false
+            referencedRelation: "character_skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_quests_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
             referencedColumns: ["id"]
           },
         ]
