@@ -5,9 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { CharacterQuestsPanel } from "@/components/game/CharacterQuestsPanel";
 import { GuildSummaryStrip } from "@/components/game/GuildSummaryStrip";
+import { RitualTabs } from "@/components/game/RitualTabs";
 import { QuickAddQuest } from "@/components/game/QuickAddQuest";
 import { Button } from "@/components/ui/button";
-import { Pencil, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 export default function MyCharacter() {
   const { membership, kidPinCharacterId } = useAuth();
@@ -115,19 +116,29 @@ export default function MyCharacter() {
         {/* 2. Compact Guild Summary Strip */}
         <GuildSummaryStrip />
 
-        {/* 3. Training Grounds — Ritual Blocks */}
+        {/* 3. Training Grounds — Ritual Tabs */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
               <span>🏋️</span> Training Grounds
             </h2>
+          </div>
+          <RitualTabs characterId={characterId} isParent={isParent} />
+        </section>
+
+        {/* 4. Open Quests (Side / Guild / Campaign) */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-fantasy text-xl text-foreground flex items-center gap-2">
+              <span>📜</span> Open Quests
+            </h2>
             {isParent && (
               <QuickAddQuest
                 preSelectedCharacterIds={[characterId]}
-                defaultQuestType="training"
+                defaultQuestType="side"
                 trigger={
                   <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" /> Add Training Quest
+                    <Plus className="h-4 w-4 mr-1" /> Add Quest
                   </Button>
                 }
               />
