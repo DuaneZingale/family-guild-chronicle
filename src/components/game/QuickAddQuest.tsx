@@ -27,7 +27,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { getDomain } from "@/lib/gameLogic";
+
 import { Plus, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -54,7 +54,36 @@ export function QuickAddQuest({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: QuickAddQuestProps) {
-  const { state } = useGame();
+  const { membership } = useAuth();
+  const familyId = membership?.familyId;
+
+  // Fetch characters from Supabase
+  const { data: supabaseCharacters = [] } = useQuery({
+    queryKey: ["characters", familyId],
+    queryFn: async () => {
+      if (!familyId) return [];
+      const { data, error } = await supabase
+        .from("characters")
+        .select("id, name, avatar_emoji, is_kid, family_id")
+        .eq("family_id", familyId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!familyId,
+  });
+
+  // Fetch skill definitions from Supabase
+  const { data: skillDefinitions = [] } = useQuery({
+    queryKey: ["skill-definitions-with-domains"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("skill_definitions")
+        .select("id, name, domain_id, domain_definitions(icon, name)")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
   const createQuest = useCreateQuest();
   const updateQuest = useUpdateQuest();
 
@@ -82,7 +111,7 @@ export function QuickAddQuest({
   const [notifyIfIncomplete, setNotifyIfIncomplete] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const assignableCharacters = state.characters.filter((c) => c.id !== "guild");
+  const assignableCharacters = supabaseCharacters;
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const isTraining = questType === "training";
@@ -140,43 +169,48 @@ export function QuickAddQuest({
 
     const characterIds = isGuild ? [null] : selectedCharacterIds;
 
-    for (const charId of characterIds) {
-      const questData = {
-        quest_type: questType,
-        name: name.trim(),
-        description: "",
-        assigned_to_character_id: charId,
-        character_skill_id: skillId || null,
-        xp_reward: xpReward,
-        gold_reward: goldReward,
-        frequency_type: isTraining ? frequencyType : null,
-        ritual_block: isTraining && ritualBlock ? ritualBlock : null,
-        days_of_week: isTraining && frequencyType === "weekly" ? daysOfWeek : [],
-        times_per_day: isTraining ? timesPerDay : 1,
-        interval_days: null,
-        importance,
-        autonomy: autonomyLevel,
-        due_start: dueWindowStart || null,
-        due_end: dueWindowEnd || null,
-        notify_if_incomplete: notifyIfIncomplete,
-        campaign_id: null,
-        step_order: null,
-        active: true,
-        status: "available",
-        is_suggested: false,
-        source_template_id: null,
-      };
+    try {
+      for (const charId of characterIds) {
+        const questData = {
+          quest_type: questType,
+          name: name.trim(),
+          description: "",
+          assigned_to_character_id: charId,
+          character_skill_id: skillId || null,
+          xp_reward: xpReward,
+          gold_reward: goldReward,
+          frequency_type: isTraining ? frequencyType : null,
+          ritual_block: isTraining && ritualBlock ? ritualBlock : null,
+          days_of_week: isTraining && frequencyType === "weekly" ? daysOfWeek : [],
+          times_per_day: isTraining ? timesPerDay : 1,
+          interval_days: null,
+          importance,
+          autonomy: autonomyLevel,
+          due_start: dueWindowStart || null,
+          due_end: dueWindowEnd || null,
+          notify_if_incomplete: notifyIfIncomplete,
+          campaign_id: null,
+          step_order: null,
+          active: true,
+          status: "available",
+          is_suggested: false,
+          source_template_id: null,
+        };
 
-      if (isEditing && editTemplate) {
-        await updateQuest.mutateAsync({ id: editTemplate.id, ...questData });
-      } else {
-        await createQuest.mutateAsync(questData as any);
+        if (isEditing && editTemplate) {
+          await updateQuest.mutateAsync({ id: editTemplate.id, ...questData });
+        } else {
+          await createQuest.mutateAsync(questData as any);
+        }
       }
-    }
 
-    toast.success(isEditing ? "Quest updated!" : `Quest${characterIds.length > 1 ? "s" : ""} created!`);
-    setOpen(false);
-    resetForm();
+      toast.success(isEditing ? "Quest updated!" : `Quest${characterIds.length > 1 ? "s" : ""} created!`);
+      setOpen(false);
+      resetForm();
+    } catch (err: any) {
+      console.error("Quest creation failed:", err);
+      toast.error(err?.message ?? "Failed to create quest");
+    }
   }
 
   const questTypeLabels: Record<QuestType, { icon: string; label: string }> = {
@@ -240,9 +274,9 @@ export function QuickAddQuest({
                   onClick={() => setSelectedCharacterIds(assignableCharacters.map((c) => c.id))}
                   className="text-xs h-7 px-2"
                 >All</Button>
-                {assignableCharacters.some((c) => c.isKid) && (
+                {assignableCharacters.some((c) => c.is_kid) && (
                   <Button type="button" variant="ghost" size="sm"
-                    onClick={() => setSelectedCharacterIds(assignableCharacters.filter((c) => c.isKid).map((c) => c.id))}
+                    onClick={() => setSelectedCharacterIds(assignableCharacters.filter((c) => c.is_kid).map((c) => c.id))}
                     className="text-xs h-7 px-2"
                   >All Kids</Button>
                 )}
@@ -262,7 +296,7 @@ export function QuickAddQuest({
                     checked={selectedCharacterIds.includes(char.id)}
                     onCheckedChange={() => toggleCharacter(char.id)}
                   />
-                  <span className="text-lg">{char.avatarEmoji}</span>
+                  <span className="text-lg">{char.avatar_emoji}</span>
                   <span className="text-sm font-medium truncate">{char.name}</span>
                 </label>
               ))}
@@ -278,8 +312,8 @@ export function QuickAddQuest({
               <SelectValue placeholder="Select skill" />
             </SelectTrigger>
             <SelectContent>
-              {state.skills.map((skill) => {
-                const domain = getDomain(state, skill.domainId);
+              {skillDefinitions.map((skill) => {
+                const domain = skill.domain_definitions as any;
                 return (
                   <SelectItem key={skill.id} value={skill.id}>
                     {domain?.icon} {skill.name}
