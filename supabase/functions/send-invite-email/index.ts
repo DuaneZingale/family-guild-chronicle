@@ -85,7 +85,7 @@ serve(async (req) => {
     }
 
     // Build the join URL
-    const appUrl = req.headers.get("origin") || "https://hearth-and-home-quests.lovable.app";
+    const appUrl = "https://hearth-and-home-quests.lovable.app";
     const joinUrl = `${appUrl}/join?code=${code}`;
 
     // Send the email via Supabase Auth admin API (magic link style)
