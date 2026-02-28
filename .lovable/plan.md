@@ -1,105 +1,154 @@
 
+# Refactor: RPG Skill Trees, Domain-to-Path Cleanup, Dark Mode, and Core Skills
 
-# Fix Invite System and Streamline Member Management
+## Overview
+This is a comprehensive refactor touching database seed data, UI terminology, the Paths page visual overhaul, dark/light theme toggle, and quest creation alignment. No new tables are needed -- the existing `skill_definitions` and `path_definitions` tables already support everything.
 
-## Problems Found
+---
 
-1. **Immediate bug**: The database has CHECK constraints on both `family_invites` and `memberships` tables that only allow roles `'parent'` and `'kid'`. When you try to create an invite with role `'co-parent'` or `'guest'`, Postgres rejects it. This is why you see "violates check constraint family_invites_role_check".
+## 1. Replace Core Skills in Database
 
-2. **Guild Hall "Add Member" button** still uses the old local-only GameContext, not the real Supabase system. It needs to be replaced.
+**Current state:** 21 generic skills in `skill_definitions` (e.g., "Reading", "Morning Routine", "Outdoor Play").
 
-3. **No clear flow for the three member scenarios**:
-   - Adding a kid on a shared device (no email needed, just a PIN)
-   - Inviting a spouse/co-parent to join on their own device (invite code)
-   - Adding a kid who will later get their own device
+**Action:** Delete existing skill_definitions rows and insert the 35 RPG-named skills (5 per path):
 
-## Plan
+| Path | Skills |
+|------|--------|
+| Care | Vitality, Athletics, Restoration, Discipline, Composure |
+| Curiosity | Insight, Inquiry, Perception, Lore, Expression |
+| Craft | Creation, Artistry, Mastery, Performance, Engineering |
+| Contribution | Service, Order, Reliability, Maintenance, Community |
+| Connection | Speechcraft, Empathy, Compassion, Repair, Leadership |
+| Wealth | Commerce, Provisioning, Strategy, Investment, Administration |
+| Adventure | Exploration, Recreation, Courage, Adaptation, Discovery |
 
-### Step 1 -- Fix Database Constraints
+Each skill gets a short RPG-flavored description. `path_id` and `domain_id` both set to the path ID for backward compatibility.
 
-Run a migration to drop the old CHECK constraints and replace them with expanded ones:
+**Risk:** Existing `unified_quests` and `character_skills` rows reference old `skill_definition` IDs via `character_skill_id`. Since there are very few quests in the DB currently, this is acceptable -- orphaned references will just show no skill tag. The `family_skill_library` seeding function will re-seed with the new defaults.
 
-```text
-memberships.role:    parent, co-parent, kid, guest
-family_invites.role: parent, co-parent, kid, guest
-```
+---
 
-This immediately fixes the "violates check constraint" error.
+## 2. Update Seed Data (Local)
 
-### Step 2 -- Update `is_family_parent()` to include co-parents
+Update `src/data/seed.ts`:
+- Replace all SKILLS entries with the 35 new RPG skills
+- Update QUEST_TEMPLATES and SUGGESTED_QUEST_LIBRARY to reference new skill IDs
+- Keep PATHS, CHARACTERS, CAMPAIGNS, REWARDS unchanged
 
-The existing `is_family_parent` function only checks `role = 'parent'`. It needs to also match `'co-parent'` so co-parents can manage the guild.
+---
 
-### Step 3 -- Replace Guild Hall "Add Member" with two clear actions
+## 3. Replace "Domain" Terminology Everywhere
 
-Remove the old `CharacterEditDialog` button and replace it with two options:
+Files to update:
+- **`src/components/game/DomainBadge.tsx`** -- rename CSS class `domain-badge` references, keep component working
+- **`src/index.css`** -- rename `.domain-badge` to `.path-badge` (keep both for compat)
+- **`src/pages/DomainsSkills.tsx`** -- update `state.domains` references and UI copy
+- **`src/pages/Campaigns.tsx`** -- replace `getDomain` calls with `getPath`
+- **`src/lib/gameLogic.ts`** -- already has `getPath`, just clean up deprecated `getDomain` usage
+- **`src/types/game.ts`** -- already migrated, just clean deprecated aliases
+- **`src/data/seed.ts`** -- remove `DOMAINS` export alias
 
-- **"Add Kid Character"** -- Creates a character on this device (shared device scenario). Opens a simple dialog: enter name, pick emoji. The kid gets a character but no Supabase auth account. Parent can set a PIN for them later.
-- **"Invite Member"** -- Links to Guild Settings invites tab. For spouse/co-parent/older kid who will use their own device and email.
+---
 
-### Step 4 -- Create "Add Kid Character" dialog
+## 4. Paths Page Overhaul (Skyrim-Style Skill Trees)
 
-A new dialog component that:
-1. Takes a character name and avatar emoji
-2. Creates the character in Supabase (with `is_kid = true`)
-3. Optionally sets a 4-digit PIN right away
-4. Does NOT create a Supabase auth user (the kid logs in via PIN on the shared device)
-5. If the kid later gets their own device, a parent can generate an invite code to link them
+Rebuild `src/pages/DomainsSkills.tsx` to be a dedicated "Skill Trees" screen:
 
-### Step 5 -- Clean up Guild Settings invite role options
+**Layout per Path:**
+- Large path icon + "The Path Of [Name]" heading + description
+- Computed "Path Level" (sum of all skill XP under path, divided by level threshold)
+- Grid of skill cards, each showing:
+  - Skill name in fantasy font
+  - Level number (1-50 scale, XP/100 per level)
+  - XP progress bar with glow effect
+  - "+X XP recently" label if gains exist this week
+  - Path badge color coding
 
-The role dropdown already lists all four roles. After the constraint fix, it will just work.
+**Data source:** Fetch directly from Supabase (`xp_events` + `skill_definitions` + `path_definitions`) instead of legacy GameContext, since the Paths page should work with real DB data.
 
-## Technical Details
+**Visual style:**
+- Dark panel backgrounds even in light mode for that "skill tree" feel
+- Subtle glow on progress bars
+- Fantasy font headings throughout
 
-**Migration SQL:**
-```text
--- Drop old constraints
-ALTER TABLE memberships DROP CONSTRAINT memberships_role_check;
-ALTER TABLE family_invites DROP CONSTRAINT family_invites_role_check;
+---
 
--- Add expanded constraints
-ALTER TABLE memberships ADD CONSTRAINT memberships_role_check
-  CHECK (role IN ('parent', 'co-parent', 'kid', 'guest'));
+## 5. Dark Mode / Light Mode Toggle
 
-ALTER TABLE family_invites ADD CONSTRAINT family_invites_role_check
-  CHECK (role IN ('parent', 'co-parent', 'kid', 'guest'));
-```
+**Implementation:**
+- Add `next-themes` ThemeProvider (already installed) wrapping the app in `src/main.tsx`
+- Add a theme toggle button in the Navigation bar (sun/moon icon)
+- Dark mode CSS variables are already defined in `src/index.css` under `.dark`
+- Persist preference via `localStorage` (next-themes default behavior)
 
-**Updated `is_family_parent` function:**
-```text
-CREATE OR REPLACE FUNCTION public.is_family_parent(p_family_id uuid)
-RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM memberships
-    WHERE family_id = p_family_id
-      AND user_id = auth.uid()
-      AND role IN ('parent', 'co-parent')
-  );
-$$;
-```
+**Naming:**
+- Light = "Parchment Realm" (current default)
+- Dark = "Dark Realm" (Skyrim-inspired)
 
-**Files to modify:**
-- `src/pages/GuildHall.tsx` -- Replace "Add Member" with "Add Kid" and "Invite Member" buttons
-- New component: `src/components/game/AddKidDialog.tsx` -- Dialog to create a kid character + optional PIN
-- `src/pages/GuildSettings.tsx` -- Minor cleanup (no major changes needed once constraints are fixed)
+---
 
-**Member access scenarios after changes:**
+## 6. Quest Creation Form -- Already Correct
 
-```text
-Scenario                     Flow
---------------------------   -------------------------------------------
-Kid on shared device         Parent clicks "Add Kid" -> enters name ->
-                             optionally sets PIN -> kid uses PIN login
+The current `QuickAddQuest.tsx` already implements the hierarchical flow:
+1. Quest Type selection
+2. Path selection (required)
+3. Skill filtered by Path
+4. Rewards
 
-Spouse on own device         Parent goes to Guild Settings -> Invites ->
-                             generates code with "Co-Leader" role ->
-                             spouse goes to /join, enters code
+No changes needed here beyond ensuring the new skill IDs populate correctly after the DB migration.
 
-Kid gets own device later    Parent generates invite code with "Kid" role
-                             -> kid signs up on new device using code
-```
+---
 
+## 7. Training Grounds + Ritual Tabs -- Already Implemented
+
+`RitualTabs.tsx` and `MyCharacter.tsx` already have:
+- Morning/Afternoon/Evening tabs
+- Design Ritual mode
+- Streak display
+- Gain-based framing
+
+No changes needed.
+
+---
+
+## 8. Hall of Fame -- Already Implemented
+
+`HallOfFame.tsx` already has All-Time Legends and This Week's Momentum sections with gain-based framing.
+
+No changes needed.
+
+---
+
+## 9. Quest Board / Suggested Library -- Preserved
+
+The Quest Board page and suggested quest templates remain untouched. Skill references in the suggested library will be updated to point to new skill IDs.
+
+---
+
+## Technical Plan (File Changes)
+
+### Database Migration
+- DELETE all rows from `skill_definitions`
+- INSERT 35 new RPG-named skills with correct `path_id` and `domain_id`
+- Re-run `seed_family_skills` for existing families
+
+### Files to Create
+- None (all components exist)
+
+### Files to Edit
+1. **`src/data/seed.ts`** -- Replace SKILLS array with 35 RPG skills; update quest template skill references
+2. **`src/pages/DomainsSkills.tsx`** -- Full rewrite to Supabase-powered Skill Trees view with XP bars, levels, and RPG styling
+3. **`src/components/game/SkillCard.tsx`** -- Update to work with Supabase data instead of GameContext
+4. **`src/index.css`** -- Add `.path-badge` alias; minor dark mode polish
+5. **`src/main.tsx`** -- Wrap app with ThemeProvider
+6. **`src/components/layout/Navigation.tsx`** -- Add theme toggle button (sun/moon)
+7. **`src/pages/Campaigns.tsx`** -- Replace `getDomain` with `getPath`
+8. **`src/components/game/DomainBadge.tsx`** -- Clean up naming (keep component working)
+
+### Files Unchanged
+- `QuickAddQuest.tsx` (already correct)
+- `RitualTabs.tsx` (already correct)
+- `HallOfFame.tsx` (already correct)
+- `MyCharacter.tsx` (already correct)
+- `CharacterQuestsPanel.tsx` (already correct)
+- `GuildHall.tsx` (already correct)
