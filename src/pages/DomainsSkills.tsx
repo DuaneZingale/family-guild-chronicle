@@ -266,7 +266,7 @@ export default function PathsSkills() {
                           <h4 className="font-fantasy text-base tracking-wide">{skillDef.name}</h4>
                           <span
                             className={cn(
-                              "text-sm font-bold px-2 py-0.5 rounded-full bg-black/30",
+                              "text-sm font-bold px-2 py-0.5 rounded-full bg-muted text-foreground",
                               level > 1 && `shadow-lg ${SKILL_GLOW[path.id] || ""}`
                             )}
                           >
@@ -274,7 +274,7 @@ export default function PathsSkills() {
                           </span>
                         </div>
 
-                        <p className="text-xs opacity-70 mb-3 line-clamp-2">{skillDef.description}</p>
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{skillDef.description}</p>
 
                         {/* XP bar */}
                         <div className="xp-bar-glow">
@@ -283,10 +283,10 @@ export default function PathsSkills() {
                             style={{ width: `${progress}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between mt-1.5 text-[11px] opacity-60">
+                        <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
                           <span>{progress} / 100 XP</span>
                           {recentXP > 0 && (
-                            <span className="text-green-400 font-semibold">+{recentXP} this week</span>
+                            <span className="text-xp font-semibold">+{recentXP} this week</span>
                           )}
                         </div>
                       </div>
