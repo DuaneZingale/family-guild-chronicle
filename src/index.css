@@ -169,8 +169,27 @@
     @apply shadow-lg scale-[1.02];
   }
 
-  .domain-badge {
+  .domain-badge,
+  .path-badge {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium;
+  }
+
+  .skill-tree-panel {
+    @apply rounded-xl border-2 border-border p-6;
+    background: linear-gradient(135deg, hsl(25 25% 15%) 0%, hsl(25 20% 12%) 100%);
+    color: hsl(40 30% 90%);
+  }
+
+  .xp-bar-glow {
+    @apply h-3 rounded-full overflow-hidden;
+    background: hsl(25 20% 20%);
+    box-shadow: inset 0 1px 3px hsl(0 0% 0% / 0.3);
+  }
+
+  .xp-bar-glow-fill {
+    @apply h-full rounded-full transition-all duration-700;
+    background: linear-gradient(90deg, hsl(var(--xp)) 0%, hsl(145 70% 50%) 100%);
+    box-shadow: 0 0 8px hsl(var(--xp) / 0.5), 0 0 16px hsl(var(--xp) / 0.2);
   }
 }
 

@@ -23,68 +23,66 @@ export const CHARACTERS: Character[] = [
   { id: "guild", name: "The Guild", roleClass: "Shared", isKid: false, avatarEmoji: "🏰", gold: 0 },
 ];
 
-// Shared skill definitions — no ownerId, XP tracked per character via XPEvents
+// 35 RPG-named core skills — 5 per path
 export const SKILLS: Skill[] = [
-  // Care
-  { id: "hygiene", domainId: "care", name: "Hygiene", description: "Feel fresh and confident", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
-  { id: "sleep", domainId: "care", name: "Sleep", description: "Better mood + focus", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "movement", domainId: "care", name: "Movement", description: "Strong body, calmer brain", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "nervous_system", domainId: "care", name: "Nervous System Care", description: "Regulate, recover, reset", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
-  { id: "nutrition", domainId: "care", name: "Nutrition", description: "Fuel for energy", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  // Path of Care
+  { id: "vitality", domainId: "care", name: "Vitality", description: "Fortify your life force through health and wellness practices", isSuggested: true, suggestedFor: "all", defaultEssential: true },
+  { id: "athletics", domainId: "care", name: "Athletics", description: "Strengthen the body through movement, sport, and physical training", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "restoration", domainId: "care", name: "Restoration", description: "Master the arts of rest, recovery, and nervous system regulation", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "discipline", domainId: "care", name: "Discipline", description: "Build steady habits and routines that anchor your day", isSuggested: true, suggestedFor: "all", defaultEssential: true },
+  { id: "composure", domainId: "care", name: "Composure", description: "Cultivate emotional steadiness and calm under pressure", isSuggested: true, suggestedFor: "all", defaultEssential: false },
 
-  // Curiosity
-  { id: "reading", domainId: "curiosity", name: "Reading", description: "Ideas unlock worlds", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
-  { id: "questions", domainId: "curiosity", name: "Asking Questions", description: "Curiosity grows courage", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "research", domainId: "curiosity", name: "Research", description: "Find answers independently", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "nature_observe", domainId: "curiosity", name: "Nature Observation", description: "Wonder is everywhere", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "language", domainId: "curiosity", name: "Language/Words", description: "Communicate clearly", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  // Path of Curiosity
+  { id: "insight", domainId: "curiosity", name: "Insight", description: "Develop deep understanding through observation and reflection", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "inquiry", domainId: "curiosity", name: "Inquiry", description: "Ask powerful questions and pursue answers with determination", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
+  { id: "perception", domainId: "curiosity", name: "Perception", description: "Sharpen awareness of the world through all senses", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "lore", domainId: "curiosity", name: "Lore", description: "Accumulate knowledge through reading, study, and research", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
+  { id: "expression", domainId: "curiosity", name: "Expression", description: "Communicate ideas clearly through writing and speech", isSuggested: true, suggestedFor: "all", defaultEssential: false },
 
-  // Craft
-  { id: "writing", domainId: "craft", name: "Writing", description: "Create stories + clarity", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "art_make", domainId: "craft", name: "Making/Art", description: "Build confidence through creation", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "building", domainId: "craft", name: "Building", description: "Hands-on competence", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "music", domainId: "craft", name: "Music", description: "Practice and expression", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "ai_mastery", domainId: "craft", name: "AI Mastery", description: "Modern tool literacy", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  // Path of Craft
+  { id: "creation", domainId: "craft", name: "Creation", description: "Bring new things into existence through imagination and effort", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "artistry", domainId: "craft", name: "Artistry", description: "Develop aesthetic skill in visual, musical, or performing arts", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
+  { id: "mastery", domainId: "craft", name: "Mastery", description: "Deepen expertise through deliberate practice and repetition", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "performance", domainId: "craft", name: "Performance", description: "Execute skills under pressure with confidence and flair", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "engineering", domainId: "craft", name: "Engineering", description: "Design and build systems, structures, and solutions", isSuggested: true, suggestedFor: "all", defaultEssential: false },
 
-  // Contribution
-  { id: "room_reset", domainId: "contribution", name: "Room Reset", description: "Calm space, calm mind", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
-  { id: "dishes", domainId: "contribution", name: "Dishes/Kitchen", description: "Shared load = shared peace", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "trash", domainId: "contribution", name: "Trash", description: "Prevent chaos", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "laundry", domainId: "contribution", name: "Laundry", description: "Responsibility reps", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
-  { id: "clean_surfaces", domainId: "contribution", name: "Counters & Surfaces", description: "Quick wins reduce stress", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "bathroom_clean", domainId: "contribution", name: "Bathroom Basics", description: "Health + pride", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  // Path of Contribution
+  { id: "service", domainId: "contribution", name: "Service", description: "Strengthen the guild by helping others without expectation", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "order", domainId: "contribution", name: "Order", description: "Bring structure and cleanliness to shared spaces", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
+  { id: "reliability", domainId: "contribution", name: "Reliability", description: "Follow through on commitments and be someone others can count on", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "maintenance", domainId: "contribution", name: "Maintenance", description: "Keep systems, spaces, and responsibilities running smoothly", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "community", domainId: "contribution", name: "Community", description: "Build bonds and contribute to the greater good of the guild", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
 
-  // Connection
-  { id: "appreciation", domainId: "connection", name: "Appreciation", description: "People bloom when seen", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "kindness", domainId: "connection", name: "Kindness", description: "Compassion as a habit", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "quality_time", domainId: "connection", name: "Quality Time", description: "Build secure attachment", isSuggested: true, suggestedFor: "guild", defaultEssential: true },
-  { id: "repair", domainId: "connection", name: "Repair & Apology", description: "We can reconnect after rupture", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "affection", domainId: "connection", name: "Affection", description: "Warmth + closeness", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  // Path of Connection
+  { id: "speechcraft", domainId: "connection", name: "Speechcraft", description: "Master the art of conversation, persuasion, and storytelling", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "empathy", domainId: "connection", name: "Empathy", description: "Understand and share the feelings of others deeply", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "compassion", domainId: "connection", name: "Compassion", description: "Act with kindness and warmth toward all guild members", isSuggested: true, suggestedFor: "all", defaultEssential: true },
+  { id: "repair", domainId: "connection", name: "Repair", description: "Mend relationships through honest apology and reconnection", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "leadership", domainId: "connection", name: "Leadership", description: "Guide and inspire others through example and encouragement", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
 
-  // Wealth
-  { id: "bills", domainId: "wealth", name: "Bills & Admin", description: "Stability reduces stress", isSuggested: true, suggestedFor: "parent", defaultEssential: true },
-  { id: "budgeting", domainId: "wealth", name: "Budgeting", description: "Reality-based freedom", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
-  { id: "saving", domainId: "wealth", name: "Saving", description: "Future confidence", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "earning", domainId: "wealth", name: "Earning", description: "Build capability", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "investing", domainId: "wealth", name: "Investing", description: "Long game thinking", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  // Path of Wealth
+  { id: "commerce", domainId: "wealth", name: "Commerce", description: "Understand the flow of gold through earning and trading", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "provisioning", domainId: "wealth", name: "Provisioning", description: "Manage resources wisely to keep the guild well-supplied", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  { id: "strategy", domainId: "wealth", name: "Strategy", description: "Plan ahead and make decisions that compound over time", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  { id: "investment", domainId: "wealth", name: "Investment", description: "Grow wealth by planting seeds for the long game", isSuggested: true, suggestedFor: "parent", defaultEssential: false },
+  { id: "administration", domainId: "wealth", name: "Administration", description: "Handle bills, paperwork, and financial responsibilities", isSuggested: true, suggestedFor: "parent", defaultEssential: true },
 
-  // Adventure
-  { id: "outdoors", domainId: "adventure", name: "Outdoors", description: "Wonder + resilience", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
-  { id: "travel", domainId: "adventure", name: "Travel Days", description: "Story arcs matter", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
-  { id: "local_explore", domainId: "adventure", name: "Local Explore", description: "Adventures nearby", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
-  { id: "festivals", domainId: "adventure", name: "Events & Culture", description: "Shared memories", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
-  { id: "play", domainId: "adventure", name: "Play", description: "Joy is a growth skill", isSuggested: true, suggestedFor: "guild", defaultEssential: true },
+  // Path of Adventure
+  { id: "exploration", domainId: "adventure", name: "Exploration", description: "Venture into the unknown and discover new territories", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
+  { id: "recreation", domainId: "adventure", name: "Recreation", description: "Find joy and renewal through play and leisure", isSuggested: true, suggestedFor: "guild", defaultEssential: true },
+  { id: "courage", domainId: "adventure", name: "Courage", description: "Face challenges and fears with bravery and determination", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "adaptation", domainId: "adventure", name: "Adaptation", description: "Thrive in changing circumstances and unfamiliar environments", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "discovery", domainId: "adventure", name: "Discovery", description: "Uncover hidden wonders in the world around you", isSuggested: true, suggestedFor: "guild", defaultEssential: false },
 ];
 
-// Active quest templates (from old seed, mapped to new skills)
+// Active quest templates (mapped to new RPG skills)
 export const QUEST_TEMPLATES: QuestTemplate[] = [
-  // Chloe's training quests
   {
     id: "chloe-teeth",
     name: "Brush Teeth",
     type: "recurring",
     assignedToId: "chloe",
-    skillId: "hygiene",
+    skillId: "vitality",
     xpReward: 5,
     goldReward: 0,
     recurrenceType: "daily",
@@ -101,7 +99,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     name: "Reading Time",
     type: "recurring",
     assignedToId: "chloe",
-    skillId: "reading",
+    skillId: "lore",
     xpReward: 10,
     goldReward: 1,
     recurrenceType: "daily",
@@ -116,7 +114,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     name: "Saturday Shower",
     type: "recurring",
     assignedToId: "chloe",
-    skillId: "hygiene",
+    skillId: "vitality",
     xpReward: 15,
     goldReward: 2,
     recurrenceType: "weekly",
@@ -126,14 +124,12 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     visibility: "active",
     autonomyLevel: "prompt_ok",
   },
-
-  // Ariasha's training quests
   {
     id: "ariasha-teeth",
     name: "Brush Teeth",
     type: "recurring",
     assignedToId: "ariasha",
-    skillId: "hygiene",
+    skillId: "vitality",
     xpReward: 5,
     goldReward: 0,
     recurrenceType: "daily",
@@ -150,7 +146,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     name: "Reading Time",
     type: "recurring",
     assignedToId: "ariasha",
-    skillId: "reading",
+    skillId: "lore",
     xpReward: 10,
     goldReward: 1,
     recurrenceType: "daily",
@@ -162,29 +158,29 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   },
 ];
 
-// Suggested quest library — browsable, one-click activate
+// Suggested quest library — mapped to new RPG skills
 export const SUGGESTED_QUEST_LIBRARY: QuestTemplate[] = [
-  { id: "sug-deodorant", name: "Deodorant", type: "recurring", assignedToId: "", skillId: "hygiene", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-water-bottle", name: "Fill Water Bottle", type: "recurring", assignedToId: "", skillId: "nutrition", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-clear-table", name: "Clear Table After Meal", type: "recurring", assignedToId: "", skillId: "dishes", xpReward: 5, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-wipe-counters", name: "Wipe Counters", type: "recurring", assignedToId: "", skillId: "clean_surfaces", xpReward: 5, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-trash", name: "Take Out Trash", type: "recurring", assignedToId: "", skillId: "trash", xpReward: 10, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [1], active: false, importance: "essential", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-laundry", name: "Start Laundry Load", type: "recurring", assignedToId: "", skillId: "laundry", xpReward: 10, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
-  { id: "sug-bathroom-sink", name: "Clean Bathroom Sink", type: "recurring", assignedToId: "", skillId: "bathroom_clean", xpReward: 8, goldReward: 1, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-room-reset", name: "Room Reset", type: "recurring", assignedToId: "", skillId: "room_reset", xpReward: 10, goldReward: 2, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "essential", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-bills", name: "Pay Bills Check-in", type: "recurring", assignedToId: "", skillId: "bills", xpReward: 15, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [1], active: false, importance: "essential", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-budget", name: "Review Budget", type: "recurring", assignedToId: "", skillId: "budgeting", xpReward: 15, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [0], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-money-meeting", name: "Family Money Meeting", type: "recurring", assignedToId: "", skillId: "budgeting", xpReward: 20, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [0], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-hug", name: "Give a Hug", type: "recurring", assignedToId: "", skillId: "affection", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-appreciation", name: "Appreciation Note", type: "recurring", assignedToId: "", skillId: "appreciation", xpReward: 10, goldReward: 1, recurrenceType: "weekly", daysOfWeek: [3], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-game-night", name: "Family Game Night", type: "recurring", assignedToId: "", skillId: "quality_time", xpReward: 20, goldReward: 3, recurrenceType: "weekly", daysOfWeek: [5], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-1on1", name: "1:1 Date (Parent/Child)", type: "recurring", assignedToId: "", skillId: "quality_time", xpReward: 25, goldReward: 5, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-math", name: "Math Practice", type: "recurring", assignedToId: "", skillId: "research", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
-  { id: "sug-piano", name: "Piano Practice", type: "recurring", assignedToId: "", skillId: "music", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-passion", name: "Passion Project Time", type: "recurring", assignedToId: "", skillId: "building", xpReward: 15, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
-  { id: "sug-writing", name: "Writing/Editing Block", type: "recurring", assignedToId: "", skillId: "writing", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
-  { id: "sug-nature-walk", name: "Nature Walk", type: "recurring", assignedToId: "", skillId: "outdoors", xpReward: 15, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
-  { id: "sug-local-explore", name: "Local Exploration", type: "recurring", assignedToId: "", skillId: "local_explore", xpReward: 25, goldReward: 5, recurrenceType: "custom", intervalDays: 30, active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-deodorant", name: "Deodorant", type: "recurring", assignedToId: "", skillId: "vitality", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-water-bottle", name: "Fill Water Bottle", type: "recurring", assignedToId: "", skillId: "vitality", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-clear-table", name: "Clear Table After Meal", type: "recurring", assignedToId: "", skillId: "order", xpReward: 5, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-wipe-counters", name: "Wipe Counters", type: "recurring", assignedToId: "", skillId: "order", xpReward: 5, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-trash", name: "Take Out Trash", type: "recurring", assignedToId: "", skillId: "maintenance", xpReward: 10, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [1], active: false, importance: "essential", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-laundry", name: "Start Laundry Load", type: "recurring", assignedToId: "", skillId: "maintenance", xpReward: 10, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
+  { id: "sug-bathroom-sink", name: "Clean Bathroom Sink", type: "recurring", assignedToId: "", skillId: "order", xpReward: 8, goldReward: 1, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-room-reset", name: "Room Reset", type: "recurring", assignedToId: "", skillId: "order", xpReward: 10, goldReward: 2, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "essential", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-bills", name: "Pay Bills Check-in", type: "recurring", assignedToId: "", skillId: "administration", xpReward: 15, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [1], active: false, importance: "essential", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-budget", name: "Review Budget", type: "recurring", assignedToId: "", skillId: "strategy", xpReward: 15, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [0], active: false, importance: "growth", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-money-meeting", name: "Family Money Meeting", type: "recurring", assignedToId: "", skillId: "strategy", xpReward: 20, goldReward: 0, recurrenceType: "weekly", daysOfWeek: [0], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-hug", name: "Give a Hug", type: "recurring", assignedToId: "", skillId: "compassion", xpReward: 3, goldReward: 0, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-appreciation", name: "Appreciation Note", type: "recurring", assignedToId: "", skillId: "empathy", xpReward: 10, goldReward: 1, recurrenceType: "weekly", daysOfWeek: [3], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-game-night", name: "Family Game Night", type: "recurring", assignedToId: "", skillId: "recreation", xpReward: 20, goldReward: 3, recurrenceType: "weekly", daysOfWeek: [5], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-1on1", name: "1:1 Date (Parent/Child)", type: "recurring", assignedToId: "", skillId: "compassion", xpReward: 25, goldReward: 5, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-math", name: "Math Practice", type: "recurring", assignedToId: "", skillId: "inquiry", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
+  { id: "sug-piano", name: "Piano Practice", type: "recurring", assignedToId: "", skillId: "artistry", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-passion", name: "Passion Project Time", type: "recurring", assignedToId: "", skillId: "creation", xpReward: 15, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "self_start" },
+  { id: "sug-writing", name: "Writing/Editing Block", type: "recurring", assignedToId: "", skillId: "expression", xpReward: 10, goldReward: 1, recurrenceType: "daily", timesPerDay: 1, active: false, importance: "growth", visibility: "suggested", autonomyLevel: "prompt_ok" },
+  { id: "sug-nature-walk", name: "Nature Walk", type: "recurring", assignedToId: "", skillId: "exploration", xpReward: 15, goldReward: 2, recurrenceType: "weekly", daysOfWeek: [6], active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
+  { id: "sug-local-explore", name: "Local Exploration", type: "recurring", assignedToId: "", skillId: "exploration", xpReward: 25, goldReward: 5, recurrenceType: "custom", intervalDays: 30, active: false, importance: "delight", visibility: "suggested", autonomyLevel: "parent_led" },
 ];
 
 export const CAMPAIGNS: Campaign[] = [
@@ -197,12 +193,12 @@ export const CAMPAIGNS: Campaign[] = [
 ];
 
 export const CAMPAIGN_STEPS: CampaignStep[] = [
-  { id: "disney-1", campaignId: "disney-trip", order: 1, name: "Plan the Trip", assignedToId: "becky", skillId: "outdoors", xpReward: 50, goldReward: 0, status: "available" },
-  { id: "disney-2", campaignId: "disney-trip", order: 2, name: "Book Everything", assignedToId: "duane", skillId: "bills", xpReward: 75, goldReward: 0, status: "locked" },
-  { id: "disney-3", campaignId: "disney-trip", order: 3, name: "Pack the Bags", assignedToId: "guild", skillId: "room_reset", xpReward: 30, goldReward: 5, status: "locked" },
-  { id: "disney-4", campaignId: "disney-trip", order: 4, name: "Travel Day", assignedToId: "guild", skillId: "travel", xpReward: 100, goldReward: 10, status: "locked" },
-  { id: "disney-5", campaignId: "disney-trip", order: 5, name: "Park Day 1", assignedToId: "guild", skillId: "play", xpReward: 150, goldReward: 20, status: "locked" },
-  { id: "disney-6", campaignId: "disney-trip", order: 6, name: "Park Day 2", assignedToId: "guild", skillId: "play", xpReward: 150, goldReward: 20, status: "locked" },
+  { id: "disney-1", campaignId: "disney-trip", order: 1, name: "Plan the Trip", assignedToId: "becky", skillId: "exploration", xpReward: 50, goldReward: 0, status: "available" },
+  { id: "disney-2", campaignId: "disney-trip", order: 2, name: "Book Everything", assignedToId: "duane", skillId: "administration", xpReward: 75, goldReward: 0, status: "locked" },
+  { id: "disney-3", campaignId: "disney-trip", order: 3, name: "Pack the Bags", assignedToId: "guild", skillId: "order", xpReward: 30, goldReward: 5, status: "locked" },
+  { id: "disney-4", campaignId: "disney-trip", order: 4, name: "Travel Day", assignedToId: "guild", skillId: "courage", xpReward: 100, goldReward: 10, status: "locked" },
+  { id: "disney-5", campaignId: "disney-trip", order: 5, name: "Park Day 1", assignedToId: "guild", skillId: "recreation", xpReward: 150, goldReward: 20, status: "locked" },
+  { id: "disney-6", campaignId: "disney-trip", order: 6, name: "Park Day 2", assignedToId: "guild", skillId: "recreation", xpReward: 150, goldReward: 20, status: "locked" },
 ];
 
 export const REWARDS: Reward[] = [

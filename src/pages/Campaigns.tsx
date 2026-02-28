@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { getCharacter, getSkill, getDomain } from "@/lib/gameLogic";
+import { getCharacter, getSkill, getPath } from "@/lib/gameLogic";
 import { Check, Lock, Swords, Plus, ChevronDown, ChevronRight, Sparkles, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddCampaignDialog } from "@/components/game/AddCampaignDialog";
@@ -210,7 +210,7 @@ function ActiveQuestCard({
 }) {
   const character = getCharacter(state, step.assignedToId);
   const skill = getSkill(state, step.skillId);
-  const domain = skill ? getDomain(state, skill.domainId) : null;
+  const path = skill ? getPath(state, skill.domainId) : null;
 
   return (
     <button
@@ -228,7 +228,7 @@ function ActiveQuestCard({
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
             <span>{character?.avatarEmoji} {character?.name}</span>
             <span>•</span>
-            <span>{domain?.icon} {skill?.name}</span>
+            <span>{path?.icon} {skill?.name}</span>
           </div>
         </div>
         <div className="text-right shrink-0">
@@ -353,7 +353,7 @@ function CampaignStepRow({
 }) {
   const character = getCharacter(state, step.assignedToId);
   const skill = getSkill(state, step.skillId);
-  const domain = skill ? getDomain(state, skill.domainId) : null;
+  const path = skill ? getPath(state, skill.domainId) : null;
   const isDone = step.status === "done";
   const isAvailable = step.status === "available";
   const isLocked = step.status === "locked";
@@ -404,7 +404,7 @@ function CampaignStepRow({
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
           <span>{character?.avatarEmoji} {character?.name}</span>
           <span>•</span>
-          <span>{domain?.icon} {skill?.name}</span>
+          <span>{path?.icon} {skill?.name}</span>
         </div>
       </div>
 
