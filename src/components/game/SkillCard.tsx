@@ -1,39 +1,55 @@
-import { useGame } from "@/context/GameContext";
-import { getSkillXP, getSkillLevel, getXPProgress, getPath } from "@/lib/gameLogic";
-import type { Skill } from "@/types/game";
+import { cn } from "@/lib/utils";
 
 interface SkillCardProps {
-  skill: Skill;
-  characterId: string;
+  skill: {
+    id: string;
+    name: string;
+    description: string;
+    path_id?: string | null;
+    domain_id?: string;
+  };
+  xp?: number;
+  recentXP?: number;
+  pathId?: string;
 }
 
-export function SkillCard({ skill, characterId }: SkillCardProps) {
-  const { state } = useGame();
-  const xp = getSkillXP(state, skill.id, characterId);
-  const level = getSkillLevel(xp);
-  const progress = getXPProgress(xp, 100);
-  const domain = getPath(state, skill.domainId);
+const SKILL_GLOW: Record<string, string> = {
+  care: "shadow-red-500/30",
+  curiosity: "shadow-blue-500/30",
+  craft: "shadow-emerald-500/30",
+  contribution: "shadow-orange-500/30",
+  connection: "shadow-pink-500/30",
+  wealth: "shadow-yellow-500/30",
+  adventure: "shadow-purple-500/30",
+};
+
+export function SkillCard({ skill, xp = 0, recentXP = 0, pathId }: SkillCardProps) {
+  const level = Math.floor(xp / 100) + 1;
+  const progress = xp % 100;
+  const pid = pathId || skill.path_id || skill.domain_id || "";
 
   return (
-    <div className="parchment-panel p-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xl">{domain?.icon}</span>
-          <h4 className="font-fantasy text-lg">{skill.name}</h4>
-          <span className="text-sm px-2 py-0.5 bg-primary/10 text-primary rounded-full font-semibold">
-            Lvl {level}
-          </span>
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
-
-        <div className="mt-3">
-          <div className="xp-bar">
-            <div className="xp-bar-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {xp % 100} / 100 XP to next level
-          </div>
-        </div>
+    <div className="skill-tree-panel">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-fantasy text-base tracking-wide">{skill.name}</h4>
+        <span
+          className={cn(
+            "text-sm font-bold px-2 py-0.5 rounded-full bg-black/30",
+            level > 1 && `shadow-lg ${SKILL_GLOW[pid] || ""}`
+          )}
+        >
+          {level}
+        </span>
+      </div>
+      <p className="text-xs opacity-70 mb-3 line-clamp-2">{skill.description}</p>
+      <div className="xp-bar-glow">
+        <div className="xp-bar-glow-fill" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="flex items-center justify-between mt-1.5 text-[11px] opacity-60">
+        <span>{progress} / 100 XP</span>
+        {recentXP > 0 && (
+          <span className="text-green-400 font-semibold">+{recentXP} this week</span>
+        )}
       </div>
     </div>
   );

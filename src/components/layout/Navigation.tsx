@@ -9,7 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 const allNavItems = [
   { path: "/", label: "My Character", icon: "🧙", kidVisible: true },
@@ -33,6 +34,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { membership, user, signOut, kidPinCharacterId, exitKidPinMode } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const isKidMode = !!kidPinCharacterId;
   const isKidRole = membership?.role === "kid";
@@ -73,6 +75,17 @@ export function Navigation() {
                 <span className="hidden md:inline">{item.label}</span>
               </Link>
             ))}
+
+            {/* Theme toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sidebar-foreground hover:bg-sidebar-accent/50"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              title={theme === "dark" ? "Parchment Realm" : "Dark Realm"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
 
             {/* User menu */}
             {isKidMode ? (
