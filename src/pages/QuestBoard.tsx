@@ -171,14 +171,29 @@ export default function QuestBoard() {
                               {questType}
                             </span>
                           </div>
+                          {/* Path + Skill badge */}
+                          {skill && (() => {
+                            const skillPath = state.domains.find((d) => d.id === skill.domainId);
+                            return (
+                              <div className="flex items-center gap-2 mb-2 text-xs">
+                                {skillPath && (
+                                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded border border-primary/20 flex items-center gap-1">
+                                    {skillPath.icon} {skillPath.name}
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded">
+                                  {skill.name}
+                                </span>
+                              </div>
+                            );
+                          })()}
                           <p className="text-sm text-muted-foreground mb-2">
-                            {skill?.name}
                             {template.recurrenceType === "daily" && template.timesPerDay && template.timesPerDay > 1
-                              ? ` · ${template.timesPerDay}x daily`
+                              ? `${template.timesPerDay}x daily`
                               : template.recurrenceType === "weekly"
-                              ? " · Weekly"
+                              ? "Weekly"
                               : template.recurrenceType === "daily"
-                              ? " · Daily"
+                              ? "Daily"
                               : ""}
                           </p>
                           <div className="flex items-center gap-3 text-sm">

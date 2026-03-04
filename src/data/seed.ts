@@ -33,9 +33,9 @@ export const SKILLS: Skill[] = [
   { id: "composure", domainId: "care", name: "Composure", description: "Cultivate emotional steadiness and calm under pressure", isSuggested: true, suggestedFor: "all", defaultEssential: false },
 
   // Path of Curiosity
-  { id: "insight", domainId: "curiosity", name: "Insight", description: "Develop deep understanding through observation and reflection", isSuggested: true, suggestedFor: "all", defaultEssential: false },
-  { id: "inquiry", domainId: "curiosity", name: "Inquiry", description: "Ask powerful questions and pursue answers with determination", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
   { id: "perception", domainId: "curiosity", name: "Perception", description: "Sharpen awareness of the world through all senses", isSuggested: true, suggestedFor: "all", defaultEssential: false },
+  { id: "inquiry", domainId: "curiosity", name: "Inquiry", description: "Ask powerful questions and pursue answers with determination", isSuggested: true, suggestedFor: "kid", defaultEssential: false },
+  { id: "insight", domainId: "curiosity", name: "Insight", description: "Develop deep understanding through observation and reflection", isSuggested: true, suggestedFor: "all", defaultEssential: false },
   { id: "lore", domainId: "curiosity", name: "Lore", description: "Accumulate knowledge through reading, study, and research", isSuggested: true, suggestedFor: "kid", defaultEssential: true },
   { id: "expression", domainId: "curiosity", name: "Expression", description: "Communicate ideas clearly through writing and speech", isSuggested: true, suggestedFor: "all", defaultEssential: false },
 
