@@ -82,13 +82,13 @@ export function RitualTabs({ characterId, isParent }: RitualTabsProps) {
           const doneCount = bQuests.filter((q) => isCompletedToday(q, logs)).length;
           const allDone = bQuests.length > 0 && doneCount === bQuests.length;
           return (
-            <TabsTrigger key={block} value={block} className="flex items-center gap-1.5 text-sm">
-              <span>{RITUAL_BLOCK_CONFIG[block].icon}</span>
-              <span className="hidden sm:inline">{RITUAL_BLOCK_CONFIG[block].label.replace(" Ritual", "")}</span>
+            <TabsTrigger key={block} value={block} className="flex items-center gap-2 text-sm py-3">
+              <span className="text-xl">{RITUAL_BLOCK_CONFIG[block].icon}</span>
+              <span className="hidden sm:inline font-fantasy">{RITUAL_BLOCK_CONFIG[block].label.replace(" Ritual", "")}</span>
               {bQuests.length > 0 && (
                 <span className={cn(
-                  "text-xs ml-1",
-                  allDone ? "text-xp" : "text-muted-foreground"
+                  "text-xs font-semibold px-1.5 py-0.5 rounded-full",
+                  allDone ? "bg-xp/20 text-xp" : "bg-muted text-muted-foreground"
                 )}>
                   {doneCount}/{bQuests.length}
                 </span>
@@ -126,8 +126,9 @@ export function RitualTabs({ characterId, isParent }: RitualTabsProps) {
             )}
 
             {blockQuests.length === 0 ? (
-              <div className="parchment-panel p-6 text-center">
-                <span className="text-3xl block mb-2">{RITUAL_BLOCK_CONFIG[block].icon}</span>
+              <div className="parchment-panel p-8 text-center">
+                <span className="text-4xl block mb-3">{RITUAL_BLOCK_CONFIG[block].icon}</span>
+                <p className="font-fantasy text-lg text-muted-foreground mb-1">{RITUAL_BLOCK_CONFIG[block].label}</p>
                 <p className="text-muted-foreground text-sm">Ready to design this ritual.</p>
                 {isParent && (
                   <QuickAddQuest

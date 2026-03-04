@@ -236,10 +236,12 @@ export default function PathsSkills() {
                     <h2 className="font-fantasy text-2xl">The Path Of {path.name.replace("Path of ", "")}</h2>
                     <p className="text-sm text-muted-foreground">{path.description}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Path Level</div>
-                    <div className="font-fantasy text-2xl text-primary">{pathLevel}</div>
-                    <div className="text-xs text-muted-foreground">+{totalXP} XP total</div>
+                  <div className="text-right min-w-[120px]">
+                    <div className="font-fantasy text-lg text-primary">Level {pathLevel}</div>
+                    <div className="xp-bar w-full mt-1.5">
+                      <div className="xp-bar-fill" style={{ width: `${((totalXP % 500) / 500) * 100}%` }} />
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">{totalXP % 500} / 500 XP</div>
                   </div>
                 </div>
 

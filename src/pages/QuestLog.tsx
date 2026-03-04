@@ -25,17 +25,19 @@ export default function QuestLog() {
   const trainingQuests = filterQuests(quests, { type: "training", activeOnly: true });
   const sideQuests = filterQuests(quests, { type: "side", activeOnly: true });
   const guildQuests = filterQuests(quests, { type: "guild", activeOnly: true });
+  const completedQuests = quests.filter((q) => q.status === "done" || (!q.active && q.last_completed_at));
 
   const activeCampaigns = state.campaigns.filter((c) => c.status === "active");
 
   return (
     <PageWrapper title="Quest Log" subtitle="All your quests and adventures">
       <Tabs defaultValue="training" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="training">🏋️ Training</TabsTrigger>
           <TabsTrigger value="side">📌 Side</TabsTrigger>
           <TabsTrigger value="guild">⚔️ Guild</TabsTrigger>
           <TabsTrigger value="campaigns">🗺️ Campaigns</TabsTrigger>
+          <TabsTrigger value="completed">✅ Done</TabsTrigger>
         </TabsList>
 
         {/* Training Quests Tab */}
@@ -183,6 +185,25 @@ export default function QuestLog() {
                   </button>
                 );
               })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Completed Tab */}
+        <TabsContent value="completed">
+          {completedQuests.length === 0 ? (
+            <div className="parchment-panel p-8 text-center">
+              <span className="text-4xl block mb-2">✅</span>
+              <p className="text-lg text-muted-foreground">No completed quests yet.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Finished quests and retired training will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {completedQuests.map((quest) => (
+                <QuestRow key={quest.id} quest={quest} logs={logs} />
+              ))}
             </div>
           )}
         </TabsContent>

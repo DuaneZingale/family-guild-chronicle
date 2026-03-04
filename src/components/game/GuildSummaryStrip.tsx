@@ -15,7 +15,7 @@ export function GuildSummaryStrip() {
     queryFn: async () => {
       if (!familyId) return null;
 
-      const [xpRes, charRes, campRes] = await Promise.all([
+      const [xpRes, charRes, campRes, questRes] = await Promise.all([
         supabase
           .from("xp_events")
           .select("xp, gold")
@@ -29,13 +29,20 @@ export function GuildSummaryStrip() {
           .select("id")
           .eq("family_id", familyId)
           .eq("status", "active"),
+        supabase
+          .from("unified_quests")
+          .select("id")
+          .eq("family_id", familyId)
+          .eq("active", true)
+          .neq("status", "done"),
       ]);
 
       const totalXP = (xpRes.data ?? []).reduce((sum, e) => sum + e.xp, 0);
       const totalGold = (charRes.data ?? []).reduce((sum, c) => sum + c.gold, 0);
       const activeCampaigns = campRes.data?.length ?? 0;
+      const activeQuests = questRes.data?.length ?? 0;
 
-      return { totalXP, totalGold, activeCampaigns };
+      return { totalXP, totalGold, activeCampaigns, activeQuests };
     },
     enabled: !!familyId,
   });
@@ -50,6 +57,10 @@ export function GuildSummaryStrip() {
         <span className="flex items-center gap-1.5">
           <span className="font-semibold">💰 {stats?.totalGold ?? 0}</span>
           <span className="text-muted-foreground">Gold</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="font-semibold">📋 {stats?.activeQuests ?? 0}</span>
+          <span className="text-muted-foreground">Quests</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span className="font-semibold">⚔️ {stats?.activeCampaigns ?? 0}</span>
