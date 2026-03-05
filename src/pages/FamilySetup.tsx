@@ -32,6 +32,7 @@ export default function FamilySetup() {
       p_character_name: characterName.trim(),
       p_role_class: roleClass,
       p_avatar_emoji: avatarEmoji,
+      p_email: user.email ?? null,
     });
     setLoading(false);
 

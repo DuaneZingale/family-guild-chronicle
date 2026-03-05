@@ -464,6 +464,7 @@ export type Database = {
       memberships: {
         Row: {
           created_at: string
+          email: string | null
           family_id: string
           id: string
           role: string
@@ -471,6 +472,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           family_id: string
           id?: string
           role: string
@@ -478,6 +480,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           family_id?: string
           id?: string
           role?: string
@@ -994,16 +997,28 @@ export type Database = {
         Args: { p_family_id: string; p_instance_id: string }
         Returns: undefined
       }
-      create_family_with_setup: {
-        Args: {
-          p_avatar_emoji?: string
-          p_character_name: string
-          p_family_name: string
-          p_role_class?: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
+      create_family_with_setup:
+        | {
+            Args: {
+              p_avatar_emoji?: string
+              p_character_name: string
+              p_family_name: string
+              p_role_class?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_avatar_emoji?: string
+              p_character_name: string
+              p_email?: string
+              p_family_name: string
+              p_role_class?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       generate_daily_quests: {
         Args: { p_date?: string; p_family_id: string }
         Returns: undefined
