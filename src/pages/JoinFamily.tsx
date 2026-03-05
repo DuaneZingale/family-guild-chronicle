@@ -67,11 +67,12 @@ export default function JoinFamily() {
       return;
     }
 
-    // Create membership
+    // Create membership (store email for admin visibility)
     const { error: memErr } = await supabase.from("memberships").insert({
       family_id: invite.family_id,
       user_id: currentUser.id,
       role: invite.role,
+      email: currentUser.email ?? null,
     });
 
     if (memErr) {

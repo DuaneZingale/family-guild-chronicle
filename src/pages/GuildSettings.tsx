@@ -110,7 +110,7 @@ export default function GuildSettings() {
 
     const { data: memberships } = await supabase
       .from("memberships")
-      .select("id, user_id, role")
+      .select("id, user_id, role, email")
       .eq("family_id", familyId);
 
     if (!memberships) {
@@ -138,7 +138,7 @@ export default function GuildSettings() {
         id: m.id,
         user_id: m.user_id,
         role: m.role,
-        email: null,
+        email: m.email ?? null,
         characterName: char?.name ?? null,
         avatarEmoji: char?.avatar_emoji ?? "🧙",
       };
@@ -146,6 +146,17 @@ export default function GuildSettings() {
 
     setMembers(rows);
     setLoadingMembers(false);
+
+    // Backfill: if the current user's membership has no email, update it
+    if (user?.email) {
+      const selfMembership = memberships.find((m) => m.user_id === user.id);
+      if (selfMembership && !selfMembership.email) {
+        await supabase
+          .from("memberships")
+          .update({ email: user.email })
+          .eq("id", selfMembership.id);
+      }
+    }
   }
 
   async function loadInvites() {
@@ -528,9 +539,10 @@ export default function GuildSettings() {
               <div className="p-8 text-center text-muted-foreground">Loading members…</div>
             ) : (
               <Table>
-                <TableHeader>
+                 <TableHeader>
                   <TableRow>
                     <TableHead>Character</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     {isParent && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
@@ -552,6 +564,9 @@ export default function GuildSettings() {
                               </div>
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {member.email || (member.role === "kid" ? "—" : "Not captured")}
                         </TableCell>
                         <TableCell>
                           {isParent && !isSelf ? (
@@ -592,15 +607,15 @@ export default function GuildSettings() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => handleSendMagicLink(member.email || user?.email || "")}
-                                    disabled={actionLoading}
+                                    onClick={() => handleSendMagicLink(member.email || "")}
+                                    disabled={actionLoading || !member.email}
                                   >
                                     <Key className="h-4 w-4 mr-2" />
                                     Send Magic Link
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleSendPasswordReset(member.email || user?.email || "")}
-                                    disabled={actionLoading}
+                                    onClick={() => handleSendPasswordReset(member.email || "")}
+                                    disabled={actionLoading || !member.email}
                                   >
                                     <Send className="h-4 w-4 mr-2" />
                                     Send Password Reset
