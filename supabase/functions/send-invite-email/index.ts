@@ -25,7 +25,6 @@ serve(async (req) => {
       });
     }
 
-    // Create client with the user's token to verify identity
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,17 +36,13 @@ serve(async (req) => {
       });
     }
 
-    const { email, familyId, role, familyName, inviterName } = await req.json();
+    const body = await req.json();
+    const mode = body.mode || "invite";
+    const { email, familyId, role, familyName, inviterName, inviteCode } = body;
 
-    if (!email || !familyId || !role) {
-      return new Response(JSON.stringify({ error: "Missing email, familyId, or role" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Use service role to verify caller is a parent in this family
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Verify caller is a parent in this family
     const { data: membership } = await adminClient
       .from("memberships")
       .select("role")
@@ -56,8 +51,111 @@ serve(async (req) => {
       .single();
 
     if (!membership || !["parent", "co-parent"].includes(membership.role)) {
-      return new Response(JSON.stringify({ error: "Only parents can send invites" }), {
+      return new Response(JSON.stringify({ error: "Only parents can perform this action" }), {
         status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── MODE: resend ──
+    if (mode === "resend") {
+      if (!inviteCode || !familyId) {
+        return new Response(JSON.stringify({ error: "Missing inviteCode or familyId" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Look up the invite
+      const { data: invite } = await adminClient
+        .from("family_invites")
+        .select("email, role")
+        .eq("invite_code", inviteCode)
+        .eq("family_id", familyId)
+        .single();
+
+      if (!invite || !invite.email) {
+        return new Response(JSON.stringify({ error: "Invite not found or has no email" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = "https://hearth-and-home-quests.lovable.app";
+      const joinUrl = `${appUrl}/join?code=${inviteCode}`;
+
+      await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: serviceRoleKey,
+        },
+        body: JSON.stringify({ type: "magiclink", email: invite.email, options: { redirectTo: joinUrl } }),
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Invite resent to ${invite.email}` }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── MODE: magic-link ──
+    if (mode === "magic-link") {
+      if (!email || !familyId) {
+        return new Response(JSON.stringify({ error: "Missing email or familyId" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = "https://hearth-and-home-quests.lovable.app";
+      await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: serviceRoleKey,
+        },
+        body: JSON.stringify({ type: "magiclink", email, options: { redirectTo: appUrl } }),
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Magic link sent to ${email}` }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── MODE: reset-password ──
+    if (mode === "reset-password") {
+      if (!email || !familyId) {
+        return new Response(JSON.stringify({ error: "Missing email or familyId" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const appUrl = "https://hearth-and-home-quests.lovable.app";
+      const resetRes = await fetch(`${supabaseUrl}/auth/v1/recover`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: serviceRoleKey,
+        },
+        body: JSON.stringify({ email, redirect_to: `${appUrl}/reset-password` }),
+      });
+
+      if (!resetRes.ok) {
+        const errText = await resetRes.text();
+        console.error("Password reset failed:", errText);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: `Password reset email sent to ${email}` }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── MODE: invite (default) ──
+    if (!email || !familyId || !role) {
+      return new Response(JSON.stringify({ error: "Missing email, familyId, or role" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -69,7 +167,6 @@ serve(async (req) => {
       code += chars[Math.floor(Math.random() * chars.length)];
     }
 
-    // Create the invite record
     const { error: invErr } = await adminClient.from("family_invites").insert({
       family_id: familyId,
       invite_code: code,
@@ -84,41 +181,21 @@ serve(async (req) => {
       });
     }
 
-    // Build the join URL
     const appUrl = "https://hearth-and-home-quests.lovable.app";
     const joinUrl = `${appUrl}/join?code=${code}`;
 
-    // Send the email via Supabase Auth admin API (magic link style)
-    // We use the built-in SMTP by sending a custom email via the admin API
     const displayName = inviterName || "Someone";
     const guildName = familyName || "a Family Guild";
-    const roleLabel = role === "co-parent" ? "Co-Leader" : role === "kid" ? "Adventurer" : role === "guest" ? "Guest" : "Guild Master";
 
-    // Send invite email using Supabase's built-in email
-    const emailRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${serviceRoleKey}`,
         apikey: serviceRoleKey,
       },
-      body: JSON.stringify({
-        type: "magiclink",
-        email,
-        options: {
-          redirectTo: joinUrl,
-        },
-      }),
+      body: JSON.stringify({ type: "magiclink", email, options: { redirectTo: joinUrl } }),
     });
-
-    // Whether or not magic link works, we also send a simple invite notification
-    // using Supabase's auth.admin.inviteUserByEmail for new users
-    // or just return the code for existing users
-    
-    if (!emailRes.ok) {
-      // Fallback: just return the invite code; the frontend will show it
-      console.log("Magic link generation failed, returning code only:", await emailRes.text());
-    }
 
     return new Response(
       JSON.stringify({
