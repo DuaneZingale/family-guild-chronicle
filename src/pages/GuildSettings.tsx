@@ -23,7 +23,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Mail, Plus, RefreshCw, KeyRound } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Copy, Mail, Plus, RefreshCw, KeyRound, MoreHorizontal, Send, Key, UserX, Trash2 } from "lucide-react";
 
 interface MemberRow {
   id: string;
@@ -71,6 +88,14 @@ export default function GuildSettings() {
   const [creatingCode, setCreatingCode] = useState(false);
   const [guildName, setGuildName] = useState(membership?.familyName ?? "");
   const [savingName, setSavingName] = useState(false);
+
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "cancel-invite" | "revoke-member";
+    id: string;
+    label: string;
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (familyId) {
@@ -225,6 +250,100 @@ export default function GuildSettings() {
     toast({ title: "Copied to clipboard! 📋" });
   }
 
+  // ── New admin actions ──
+
+  async function handleResendInvite(invite: InviteRow) {
+    if (!familyId) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-invite-email", {
+        body: { mode: "resend", inviteCode: invite.invite_code, familyId },
+      });
+      if (error) throw error;
+      toast({ title: "Invite resent! 📧", description: `Resent to ${invite.email}` });
+    } catch (err: any) {
+      toast({ title: "Failed to resend", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleCancelInvite(inviteId: string) {
+    if (!familyId) return;
+    setActionLoading(true);
+    const { error } = await supabase
+      .from("family_invites")
+      .delete()
+      .eq("id", inviteId);
+    setActionLoading(false);
+
+    if (error) {
+      toast({ title: "Failed to cancel invite", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Invite cancelled 🗑️" });
+      loadInvites();
+    }
+  }
+
+  async function handleRevokeMember(membershipId: string) {
+    if (!familyId) return;
+    setActionLoading(true);
+    const { error } = await supabase
+      .from("memberships")
+      .delete()
+      .eq("id", membershipId);
+    setActionLoading(false);
+
+    if (error) {
+      toast({ title: "Failed to revoke member", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Member removed ⚔️" });
+      loadMembers();
+    }
+  }
+
+  async function handleSendMagicLink(memberEmail: string) {
+    if (!familyId || !memberEmail) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-invite-email", {
+        body: { mode: "magic-link", email: memberEmail, familyId },
+      });
+      if (error) throw error;
+      toast({ title: "Magic link sent! 🔗", description: `Sent to ${memberEmail}` });
+    } catch (err: any) {
+      toast({ title: "Failed to send magic link", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleSendPasswordReset(memberEmail: string) {
+    if (!familyId || !memberEmail) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-invite-email", {
+        body: { mode: "reset-password", email: memberEmail, familyId },
+      });
+      if (error) throw error;
+      toast({ title: "Password reset sent! 🔑", description: `Sent to ${memberEmail}` });
+    } catch (err: any) {
+      toast({ title: "Failed to send reset", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function handleConfirmAction() {
+    if (!confirmAction) return;
+    if (confirmAction.type === "cancel-invite") {
+      handleCancelInvite(confirmAction.id);
+    } else if (confirmAction.type === "revoke-member") {
+      handleRevokeMember(confirmAction.id);
+    }
+    setConfirmAction(null);
+  }
+
   if (!familyId) {
     return (
       <PageWrapper title="Guild Settings" subtitle="No guild found">
@@ -244,7 +363,7 @@ export default function GuildSettings() {
           <TabsTrigger value="guild">🏰 Guild Info</TabsTrigger>
         </TabsList>
 
-        {/* INVITES TAB (now primary) */}
+        {/* INVITES TAB */}
         <TabsContent value="invites" className="space-y-4">
           {isParent && (
             <>
@@ -293,7 +412,7 @@ export default function GuildSettings() {
                 </form>
               </div>
 
-              {/* Code-only option - secondary */}
+              {/* Code-only option */}
               <div className="parchment-panel p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-muted-foreground" />
@@ -327,7 +446,7 @@ export default function GuildSettings() {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Copy</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -348,13 +467,44 @@ export default function GuildSettings() {
                         {new Date(inv.expires_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(inv.invite_code)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(inv.invite_code)}
+                            title="Copy code"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          {isParent && inv.email && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResendInvite(inv)}
+                              disabled={actionLoading}
+                              title="Resend invite email"
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {isParent && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setConfirmAction({
+                                  type: "cancel-invite",
+                                  id: inv.id,
+                                  label: inv.email || inv.invite_code,
+                                })
+                              }
+                              title="Cancel invite"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -386,37 +536,30 @@ export default function GuildSettings() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {members.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{member.avatarEmoji}</span>
-                          <div>
-                            <div className="font-medium">
-                              {member.characterName ?? "No character"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {member.user_id === user?.id ? "You" : member.user_id.slice(0, 8) + "…"}
+                  {members.map((member) => {
+                    const isSelf = member.user_id === user?.id;
+                    return (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{member.avatarEmoji}</span>
+                            <div>
+                              <div className="font-medium">
+                                {member.characterName ?? "No character"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {isSelf ? "You" : member.user_id.slice(0, 8) + "…"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={ROLE_COLORS[member.role] ?? ""}
-                        >
-                          {ROLE_OPTIONS.find((r) => r.value === member.role)?.label ?? member.role}
-                        </Badge>
-                      </TableCell>
-                      {isParent && (
-                        <TableCell className="text-right">
-                          {member.user_id !== user?.id ? (
+                        </TableCell>
+                        <TableCell>
+                          {isParent && !isSelf ? (
                             <Select
                               value={member.role}
                               onValueChange={(val) => handleUpdateRole(member.id, val)}
                             >
-                              <SelectTrigger className="w-[160px] h-8 text-xs">
+                              <SelectTrigger className="w-[180px] h-8 text-xs">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -428,12 +571,62 @@ export default function GuildSettings() {
                               </SelectContent>
                             </Select>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Owner</span>
+                            <Badge
+                              variant="outline"
+                              className={ROLE_COLORS[member.role] ?? ""}
+                            >
+                              {ROLE_OPTIONS.find((r) => r.value === member.role)?.label ?? member.role}
+                            </Badge>
                           )}
                         </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
+                        {isParent && (
+                          <TableCell className="text-right">
+                            {isSelf ? (
+                              <span className="text-xs text-muted-foreground">Owner</span>
+                            ) : (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleSendMagicLink(member.email || user?.email || "")}
+                                    disabled={actionLoading}
+                                  >
+                                    <Key className="h-4 w-4 mr-2" />
+                                    Send Magic Link
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleSendPasswordReset(member.email || user?.email || "")}
+                                    disabled={actionLoading}
+                                  >
+                                    <Send className="h-4 w-4 mr-2" />
+                                    Send Password Reset
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() =>
+                                      setConfirmAction({
+                                        type: "revoke-member",
+                                        id: member.id,
+                                        label: member.characterName || "this member",
+                                      })
+                                    }
+                                  >
+                                    <UserX className="h-4 w-4 mr-2" />
+                                    Revoke Member
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -468,6 +661,31 @@ export default function GuildSettings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === "cancel-invite" ? "Cancel Invite?" : "Revoke Member?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === "cancel-invite"
+                ? `This will permanently cancel the invite for "${confirmAction.label}". They won't be able to use this code anymore.`
+                : `This will remove "${confirmAction?.label}" from your guild. They will lose access immediately.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {confirmAction?.type === "cancel-invite" ? "Cancel Invite" : "Revoke Member"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageWrapper>
   );
 }
